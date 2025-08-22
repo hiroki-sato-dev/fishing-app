@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String   // ユーザー名（16文字以内）
+  email        String   @unique
+  iconUrl      String?  // プロフィール画像URL
+  bio          String?  // 自己紹介
+  fishingYears Int?     // 釣り歴（年数）
+  mainFishing  String?  // メインの釣りもの
+  isPrivate    Boolean  @default(false) // 鍵付きアカウント
+  createdAt    DateTime @default(now())
+  
+  // リレーション
+  posts        Post[]
+  likes        Like[]
+  comments     Comment[]
+  followers    Follow[] @relation("Followee")
+  following    Follow[] @relation("Follower")
+  followRequests FollowRequest[] @relation("RequestedUser")
+  sentRequests   FollowRequest[] @relation("RequesterUser")
+}
+
+model Post {
+  id         String   @id @default(cuid())
+  userId     String
+  content    String   // 投稿内容（256文字以内、必須）
+  imageUrls  String[] // 画像URL配列（最大4枚）
+  latitude   Float?   // 緯度（任意）
+  longitude  Float?   // 経度（任意）
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // リレーション
+  user       User      @relation(fields: [userId], references: [id])
+  likes      Like[]
+  comments   Comment[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  
+  // リレーション
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  
+  @@unique([userId, postId])
+}
+
+model Follow {
+  id         String   @id @default(cuid())
+  followerId String
+  followeeId String
+  createdAt  DateTime @default(now())
+  
+  // リレーション
+  follower   User     @relation("Follower", fields: [followerId], references: [id])
+  followee   User     @relation("Followee", fields: [followeeId], references: [id])
+  
+  @@unique([followerId, followeeId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  content   String   // コメント内容
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // リレーション
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model FollowRequest {
+  id          String   @id @default(cuid())
+  requesterId String   // 申請者
+  requestedId String   // 申請先
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now())
+  
+  // リレーション
+  requester   User     @relation("RequesterUser", fields: [requesterId], references: [id])
+  requested   User     @relation("RequestedUser", fields: [requestedId], references: [id])
+  
+  @@unique([requesterId, requestedId])
+}
