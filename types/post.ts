@@ -4,6 +4,7 @@ export type Post = {
   imageUrls: string[]
   latitude: number | null
   longitude: number | null
+  address?: string // 住所（オプション）
   createdAt: Date
   updatedAt: Date
   user: {

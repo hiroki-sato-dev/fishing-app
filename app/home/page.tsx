@@ -1,7 +1,8 @@
 import { getPosts } from './actions/getPosts'
 import { SimpleMap } from '@/components/SimpleMap'
+import { LocationDisplay } from '@/components/LocationDisplay'
 import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, Chip, IconButton, Divider, Fab } from '@mui/material'
-import { Add as AddIcon, LocationOn, FavoriteBorder, Share, MoreVert, TrendingUp } from '@mui/icons-material'
+import { Add as AddIcon, FavoriteBorder, Share, MoreVert, TrendingUp } from '@mui/icons-material'
 import Link from 'next/link'
 import type { Post } from '@/types/post'
 
@@ -13,7 +14,7 @@ export default async function HomePage() {
     <Box sx={{ 
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #f8fafc, #eff6ff)',
-      pt: 10  // ヘッダー分のpadding-top
+      pt: 10
     }}>
       <Container maxWidth="xl" sx={{ py: 3 }}>
         {/* Hero Section */}
@@ -131,7 +132,6 @@ export default async function HomePage() {
                 <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
                   ⚡ 最新の釣果
                 </Typography>
-                {/* デスクトップのみボタン表示 */}
                 <Button
                   variant="contained"
                   size="medium"
@@ -163,7 +163,7 @@ export default async function HomePage() {
                 overflowY: { xs: 'visible', lg: 'auto' }, 
                 pr: { xs: 0, lg: 1 }
               }}>
-                {posts.map((post, index) => (
+                {posts.map((post) => (
                   <Card 
                     key={post.id} 
                     sx={{ 
@@ -179,8 +179,6 @@ export default async function HomePage() {
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                       }
                     }}
-                    className="animate-slide-up"
-                    style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <CardContent sx={{ p: 3 }}>
                       {/* User Info */}
@@ -234,17 +232,10 @@ export default async function HomePage() {
                       {/* Location */}
                       {post.latitude !== null && post.longitude !== null && (
                         <Box sx={{ mb: 2 }}>
-                          <Chip
-                            icon={<LocationOn sx={{ fontSize: 16 }} />}
-                            label={`${post.latitude.toFixed(3)}, ${post.longitude.toFixed(3)}`}
-                            size="small"
-                            variant="filled"
-                            sx={{ 
-                              bgcolor: 'rgba(14, 165, 233, 0.1)',
-                              color: 'primary.main',
-                              fontWeight: 500,
-                              '& .MuiChip-icon': { color: 'primary.main' }
-                            }}
+                          <LocationDisplay 
+                            latitude={post.latitude} 
+                            longitude={post.longitude} 
+                            address={post.address}
                           />
                         </Box>
                       )}
@@ -339,4 +330,4 @@ export default async function HomePage() {
       </Fab>
     </Box>
   )
-} 
+}

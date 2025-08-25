@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createPost } from '../actions/createPost'
 import {
   TextField,
@@ -17,6 +18,7 @@ import {
 import { LocationOn, Send, Cancel, MyLocation, Check, Image, EditNote } from '@mui/icons-material'
 
 export const PostFormClient = () => {
+  const router = useRouter()
   const [state, formAction, isPending] = useActionState(createPost, {
     success: false,
     message: '',
@@ -28,6 +30,13 @@ export const PostFormClient = () => {
   const [longitude, setLongitude] = useState<number | null>(null)
   const [locationError, setLocationError] = useState<string>('')
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+
+  // リダイレクト処理
+  useEffect(() => {
+    if (state.success && state.redirectTo) {
+      router.push(state.redirectTo)
+    }
+  }, [state.success, state.redirectTo, router])
 
   // フォームの有効性をチェック（投稿内容は必須、位置情報は任意）
   const isValid = !!content.trim() && content.length <= 256

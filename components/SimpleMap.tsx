@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { Loader } from '@googlemaps/js-api-loader'
+import { reverseGeocode } from '@/lib/geocoding'
 import type { Post } from '@/types/post'
 
 type SimpleMapProps = {
@@ -14,78 +15,67 @@ export const SimpleMap = ({ posts, height = '400px' }: SimpleMapProps) => {
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const initializeMap = async (container: HTMLDivElement) => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    
-    if (!apiKey) {
-      setError('Google Maps APIキーが設定されていません')
-      return
-    }
+  useEffect(() => {
+    const initializeMap = async () => {
+      if (!mapRef.current) return
 
-    try {
-      const loader = new Loader({
-        apiKey,
-        version: 'weekly',
-        libraries: ['maps', 'marker']
-      })
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      if (!apiKey) {
+        setError('Google Maps APIキーが設定されていません')
+        return
+      }
 
-      const google = await loader.load()
-      
-      const map = new google.maps.Map(container, {
-        center: { lat: 35.6762, lng: 139.6503 },
-        zoom: 10,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        mapId: 'FISHING_APP_MAP', // AdvancedMarkerElement用のMap ID
-      })
+      try {
+        const loader = new Loader({
+          apiKey,
+          version: 'weekly',
+          libraries: ['maps', 'marker']
+        })
 
-      // マーカーを追加（AdvancedMarkerElementを使用）
-      posts.forEach((post) => {
-        // 位置情報がnullでないことを確認
-        if (post.latitude !== null && post.longitude !== null) {
-          // AdvancedMarkerElementを試行、失敗した場合は従来のMarkerを使用
-          if (google.maps.marker && google.maps.marker.AdvancedMarkerElement) {
-            new google.maps.marker.AdvancedMarkerElement({
-              position: { lat: post.latitude, lng: post.longitude },
-              map,
-              title: post.user.name,
-            })
-          } else {
-            // フォールバック: 古いMarkerを使用（非推奨だが互換性のため）
-            // @ts-ignore - 非推奨APIの警告を抑制
+        await loader.importLibrary('maps')
+        await loader.importLibrary('marker')
+
+        const map = new google.maps.Map(mapRef.current, {
+          center: { lat: 35.6762, lng: 139.6503 },
+          zoom: 10,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false
+        })
+
+        // マーカーを追加
+        posts.forEach(async (post) => {
+          if (post.latitude !== null && post.longitude !== null) {
+            const address = post.address || await reverseGeocode(post.latitude, post.longitude)
+            const title = `${post.user.name} - ${address}`
+            
             new google.maps.Marker({
               position: { lat: post.latitude, lng: post.longitude },
               map,
-              title: post.user.name,
+              title,
             })
           }
-        }
-      })
-
-      // 投稿がある場合は範囲を調整
-      const validPosts = posts.filter(post => post.latitude !== null && post.longitude !== null)
-      if (validPosts.length > 0) {
-        const bounds = new google.maps.LatLngBounds()
-        validPosts.forEach(post => {
-          bounds.extend({ lat: post.latitude!, lng: post.longitude! })
         })
-        map.fitBounds(bounds)
+
+        // 投稿がある場合は範囲を調整
+        const validPosts = posts.filter(post => post.latitude !== null && post.longitude !== null)
+        if (validPosts.length > 0) {
+          const bounds = new google.maps.LatLngBounds()
+          validPosts.forEach(post => {
+            bounds.extend({ lat: post.latitude!, lng: post.longitude! })
+          })
+          map.fitBounds(bounds)
+        }
+
+        setIsLoaded(true)
+      } catch (err) {
+        console.error('Google Maps loading error:', err)
+        setError('地図の読み込みに失敗しました')
       }
-
-      setIsLoaded(true)
-    } catch (err) {
-      setError('地図の読み込みに失敗しました')
-      console.error(err)
     }
-  }
 
-  const handleRef = (node: HTMLDivElement | null) => {
-    if (node && !isLoaded && !error) {
-      mapRef.current = node
-      initializeMap(node)
-    }
-  }
+    initializeMap()
+  }, [posts])
 
   if (error) {
     return (
@@ -101,10 +91,7 @@ export const SimpleMap = ({ posts, height = '400px' }: SimpleMapProps) => {
         }}
       >
         <div style={{ textAlign: 'center', color: '#666' }}>
-          <div>{error}</div>
-          <div style={{ fontSize: '12px', marginTop: '4px' }}>
-            APIキーの設定を確認してください
-          </div>
+          {error}
         </div>
       </div>
     )
@@ -112,7 +99,7 @@ export const SimpleMap = ({ posts, height = '400px' }: SimpleMapProps) => {
 
   return (
     <div 
-      ref={handleRef}
+      ref={mapRef}
       style={{ 
         height, 
         width: '100%', 

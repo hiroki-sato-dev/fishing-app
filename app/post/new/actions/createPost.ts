@@ -2,7 +2,6 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createPostSchema, FormState } from '@/lib/schemas'
 import { z } from 'zod'
 
@@ -58,13 +57,27 @@ export const createPost = async (
 
     console.log('投稿が作成されました:', post.id)
     revalidatePath('/home')
-    redirect('/home')
+    
+    return {
+      success: true,
+      message: '投稿が作成されました',
+      redirectTo: '/home'
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
+      const fieldErrors: Record<string, string[]> = {}
+      error.issues.forEach((issue) => {
+        const path = issue.path.join('.')
+        if (!fieldErrors[path]) {
+          fieldErrors[path] = []
+        }
+        fieldErrors[path].push(issue.message)
+      })
+      
       return {
         success: false,
         message: 'バリデーションエラーが発生しました',
-        errors: error.flatten().fieldErrors
+        errors: fieldErrors
       }
     }
     console.error('投稿作成エラー:', error)
