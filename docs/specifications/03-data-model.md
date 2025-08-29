@@ -23,29 +23,55 @@ model User {
   following    Follow[] @relation("Follower")
   followRequests FollowRequest[] @relation("RequestedUser")
   sentRequests   FollowRequest[] @relation("RequesterUser")
+  createdAreas FishingArea[]  // 作成した釣りポイント
 }
 ```
 
-### 3.1.2 Post（投稿）
+### 3.1.2 FishingArea（釣りポイント・エリア）
 ```prisma
-model Post {
-  id         String   @id @default(cuid())
-  userId     String
-  content    String   // 投稿内容（256文字以内、必須）
-  imageUrls  String[] // 画像URL配列（最大4枚）
-  latitude   Float?   // 緯度（任意）
-  longitude  Float?   // 経度（任意）
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+model FishingArea {
+  id          String   @id @default(cuid())
+  name        String?  // エリア名（ユーザー命名可能、32文字以内）
+  centerLat   Float    // 円の中心緯度
+  centerLng   Float    // 円の中心経度
+  radius      Int      @default(200) // 円の半径（メートル）
+  description String?  // エリアの説明（256文字以内）
+  createdBy   String   // エリア作成者
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 統計情報
+  postCount   Int      @default(0) // 投稿数（非正規化）
   
   // リレーション
-  user       User      @relation(fields: [userId], references: [id])
-  likes      Like[]
-  comments   Comment[]
+  creator     User     @relation(fields: [createdBy], references: [id])
+  posts       Post[]
+  fishData    FishAreaData[] // フェーズ3で追加予定
 }
 ```
 
-### 3.1.3 Like（いいね）
+### 3.1.3 Post（投稿）
+```prisma
+model Post {
+  id            String      @id @default(cuid())
+  userId        String
+  content       String      // 投稿内容（256文字以内、必須）
+  imageUrls     String[]    // 画像URL配列（最大4枚）
+  fishingAreaId String?     // 釣りポイントID（必須だが移行期間中は任意）
+  latitude      Float?      // 緯度（移行期間中の既存データ用・新規投稿では非推奨）
+  longitude     Float?      // 経度（移行期間中の既存データ用・新規投稿では非推奨）
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // リレーション
+  user          User        @relation(fields: [userId], references: [id])
+  fishingArea   FishingArea? @relation(fields: [fishingAreaId], references: [id])
+  likes         Like[]
+  comments      Comment[]
+}
+```
+
+### 3.1.4 Like（いいね）
 ```prisma
 model Like {
   id      String @id @default(cuid())
@@ -61,7 +87,7 @@ model Like {
 }
 ```
 
-### 3.1.4 Comment（コメント）
+### 3.1.5 Comment（コメント）
 ```prisma
 model Comment {
   id        String   @id @default(cuid())
@@ -77,7 +103,7 @@ model Comment {
 }
 ```
 
-### 3.1.5 Follow（フォロー関係）
+### 3.1.6 Follow（フォロー関係）
 ```prisma
 model Follow {
   id         String   @id @default(cuid())
@@ -93,7 +119,7 @@ model Follow {
 }
 ```
 
-### 3.1.6 FollowRequest（フォロー申請）
+### 3.1.7 FollowRequest（フォロー申請）
 ```prisma
 model FollowRequest {
   id          String   @id @default(cuid())
@@ -112,17 +138,40 @@ model FollowRequest {
 
 ## 3.2 将来拡張予定のモデル（フェーズ3以降）
 
-### 3.2.1 FishSpecies（魚種）
+### 3.2.1 FishAreaData（エリア別魚データ）
 ```prisma
-model FishSpecies {
-  id        String @id @default(cuid())
-  name      String // 魚種名
-  category  String // カテゴリ（海水魚/淡水魚など）
-  // Postにリレーション追加予定
+model FishAreaData {
+  id           String      @id @default(cuid())
+  fishingAreaId String
+  fishSpecies  String      // 魚種名
+  probability  Float       // 釣れる確率（0-1）
+  bestSeason   String?     // 最適時期（"春", "夏"など）
+  bestTime     String?     // 最適時間帯（"朝", "夕"など）
+  avgSize      Float?      // 平均サイズ（cm）
+  notes        String?     // 釣り方・ポイント等の補足
+  lastUpdated  DateTime    @updatedAt
+  
+  // リレーション
+  fishingArea  FishingArea @relation(fields: [fishingAreaId], references: [id])
+  
+  @@unique([fishingAreaId, fishSpecies])
 }
 ```
 
-### 3.2.2 Tackle（タックル情報）
+### 3.2.2 FishSpecies（魚種マスタ）
+```prisma
+model FishSpecies {
+  id        String @id @default(cuid())
+  name      String @unique // 魚種名
+  category  String         // カテゴリ（海水魚/淡水魚など）
+  habitat   String?        // 生息地（"河口", "沖合"など）
+  iconUrl   String?        // 魚種アイコンURL
+  
+  // 将来的にPostテーブルとの直接リレーション追加予定
+}
+```
+
+### 3.2.3 Tackle（タックル情報）
 ```prisma
 model Tackle {
   id          String @id @default(cuid())
@@ -130,7 +179,9 @@ model Tackle {
   brand       String // メーカー
   model       String // 型番
   description String // 詳細
-  // Postにリレーション追加予定
+  imageUrl    String? // 商品画像URL
+  
+  // 将来的にPostテーブルとの直接リレーション追加予定
 }
 ```
 
@@ -141,6 +192,8 @@ model Tackle {
 - **投稿内容**: 256文字以内（必須）
 - **コメント内容**: 500文字以内
 - **自己紹介**: 200文字以内
+- **釣りエリア名**: 32文字以内
+- **釣りエリア説明**: 256文字以内
 
 ### 3.3.2 ファイル制限
 - **プロフィール画像**: 5MB以内、JPG/PNG/WebP
@@ -149,3 +202,11 @@ model Tackle {
 ### 3.3.3 地理的制約
 - **緯度**: -90 ～ 90
 - **経度**: -180 ～ 180
+- **釣りエリア半径**: 50 ～ 1000メートル（デフォルト: 200m）
+
+### 3.3.4 FishingArea（釣りエリア）制約
+- **重複チェック**: 新規エリア作成時、既存エリアとの重複判定（中心点から半径内）
+- **統合提案**: 近接する複数エリア（中心間距離100m以内）の統合提案機能
+- **最小投稿数**: エリア表示には最低1件の投稿が必要
+- **既存投稿の移行**: 個別位置投稿（latitude/longitude）は最寄りエリアに自動統合表示
+- **表示方針**: 地図上はエリア円形のみ表示、個別ピンは廃止
