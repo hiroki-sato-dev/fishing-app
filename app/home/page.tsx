@@ -1,14 +1,16 @@
-import { getPosts } from './actions/getPosts'
+import { getPosts, getFishingAreas } from './actions/getPosts'
 import { SimpleMap } from '@/components/SimpleMap'
-import { LocationDisplay } from '@/components/LocationDisplay'
 import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, Chip, IconButton, Divider, Fab } from '@mui/material'
 import { Add as AddIcon, FavoriteBorder, Share, MoreVert, TrendingUp } from '@mui/icons-material'
 import Link from 'next/link'
 import type { Post } from '@/types/post'
+import type { FishingArea } from '@/types/fishing-area'
 
 export default async function HomePage() {
-  const result = await getPosts()
-  const posts: Post[] = result.success ? result.posts : []
+  const postsResult = await getPosts()
+  const areasResult = await getFishingAreas()
+  const posts: Post[] = postsResult.success ? postsResult.posts : []
+  const fishingAreas: FishingArea[] = areasResult.success ? areasResult.fishingAreas : []
 
   return (
     <Box sx={{ 
@@ -59,9 +61,9 @@ export default async function HomePage() {
               <Box sx={{ p: 3, pb: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    🗺️ 釣果マップ
+                    🗺️ 釣りエリアマップ
                     <Chip 
-                      label={`${posts.length}件の釣果`} 
+                      label={`${fishingAreas.length}エリア`} 
                       color="primary" 
                       size="small"
                       sx={{ ml: 1, fontWeight: 600 }}
@@ -83,7 +85,7 @@ export default async function HomePage() {
                   </Button>
                 </Box>
               </Box>
-              <SimpleMap posts={posts} height="500px" />
+              <SimpleMap fishingAreas={fishingAreas} height="500px" />
             </Card>
           </Grid>
 
@@ -101,16 +103,16 @@ export default async function HomePage() {
             >
               <Box sx={{ p: 2, pb: 0 }}>
                 <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  🗺️ 釣果マップ
+                  🗺️ 釣りエリアマップ
                   <Chip 
-                    label={`${posts.length}件`} 
+                    label={`${fishingAreas.length}エリア`} 
                     color="primary" 
                     size="small"
                     sx={{ fontWeight: 600 }}
                   />
                 </Typography>
               </Box>
-              <SimpleMap posts={posts} height="250px" />
+              <SimpleMap fishingAreas={fishingAreas} height="250px" />
             </Card>
           </Grid>
 
@@ -229,13 +231,15 @@ export default async function HomePage() {
                         </Typography>
                       )}
                       
-                      {/* Location */}
-                      {post.latitude !== null && post.longitude !== null && (
+                      {/* Fishing Area */}
+                      {post.fishingArea && (
                         <Box sx={{ mb: 2 }}>
-                          <LocationDisplay 
-                            latitude={post.latitude} 
-                            longitude={post.longitude} 
-                            address={post.address}
+                          <Chip 
+                            label={`📍 ${post.fishingArea.name || '釣りポイント'}`}
+                            variant="outlined"
+                            color="primary"
+                            size="small"
+                            sx={{ fontSize: '0.8rem', fontWeight: 500 }}
                           />
                         </Box>
                       )}

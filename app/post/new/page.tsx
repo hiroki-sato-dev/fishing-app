@@ -1,9 +1,15 @@
 import { PostFormClient } from './components/PostFormClient'
+import { getFishingAreas } from '@/app/home/actions/getPosts'
 import { Container, Box, Typography, Paper, Chip, Fab } from '@mui/material'
 import { CreateOutlined, TipsAndUpdates, Home } from '@mui/icons-material'
 import Link from 'next/link'
+import type { FishingArea } from '@/types/fishing-area'
 
-export default function NewPostPage() {
+export default async function NewPostPage() {
+  // サーバーサイドで釣りエリアデータを取得
+  const areasResult = await getFishingAreas()
+  const fishingAreas: FishingArea[] = areasResult.success ? areasResult.fishingAreas : []
+
   return (
     <Box sx={{ 
       minHeight: '100vh',
@@ -108,7 +114,7 @@ export default function NewPostPage() {
           >
             ✍️ 投稿内容を入力
           </Typography>
-          <PostFormClient />
+          <PostFormClient fishingAreas={fishingAreas} />
         </Paper>
       </Container>
 
