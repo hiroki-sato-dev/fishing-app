@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { createPostSchema, FormState } from '@/lib/schemas'
+import { createFishingArea } from './createFishingArea'
 import { z } from 'zod'
 
 export const createPost = async (
@@ -15,6 +16,9 @@ export const createPost = async (
     const imageUrl = formData.get('imageUrl') as string
     const latitudeStr = formData.get('latitude') as string
     const longitudeStr = formData.get('longitude') as string
+    const fishingAreaId = formData.get('fishingAreaId') as string
+    const newAreaName = formData.get('newAreaName') as string
+    const newAreaDescription = formData.get('newAreaDescription') as string
 
     const rawData = {
       content,
@@ -35,14 +39,35 @@ export const createPost = async (
       }
     }
 
+    let actualFishingAreaId: string | undefined = fishingAreaId
+
+    // 一時的なエリアIDの場合、実際にエリアを作成
+    if (fishingAreaId && fishingAreaId.startsWith('temp-') && validatedData.latitude && validatedData.longitude) {
+      const areaResult = await createFishingArea({
+        name: newAreaName || undefined,
+        centerLat: validatedData.latitude,
+        centerLng: validatedData.longitude,
+        radius: 200,
+        description: newAreaDescription || undefined,
+        createdBy: user.id
+      })
+      
+      if (areaResult.success && areaResult.fishingArea) {
+        actualFishingAreaId = areaResult.fishingArea.id
+      } else {
+        actualFishingAreaId = undefined // エリア作成に失敗した場合は座標のみで投稿
+      }
+    }
+
     // 投稿を作成
     const post = await prisma.post.create({
       data: {
         userId: user.id,
         content: validatedData.content.trim(),
-        latitude: validatedData.latitude || null,
-        longitude: validatedData.longitude || null,
         imageUrls: validatedData.imageUrl ? [validatedData.imageUrl] : [],
+        fishingAreaId: actualFishingAreaId || undefined,
+        latitude: validatedData.latitude || undefined,
+        longitude: validatedData.longitude || undefined,
       },
       include: {
         user: {
@@ -52,8 +77,21 @@ export const createPost = async (
           },
         },
         likes: true,
+        fishingArea: true,
       },
     })
+
+    // 釣りエリアの投稿数を更新
+    if (actualFishingAreaId) {
+      await prisma.fishingArea.update({
+        where: { id: actualFishingAreaId },
+        data: {
+          postCount: {
+            increment: 1
+          }
+        }
+      })
+    }
 
     console.log('投稿が作成されました:', post.id)
     revalidatePath('/home')

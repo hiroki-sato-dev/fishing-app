@@ -32,22 +32,44 @@ model User {
   following    Follow[] @relation("Follower")
   followRequests FollowRequest[] @relation("RequestedUser")
   sentRequests   FollowRequest[] @relation("RequesterUser")
+  createdAreas FishingArea[]  // 作成した釣りポイント
+}
+
+model FishingArea {
+  id          String   @id @default(cuid())
+  name        String?  // エリア名（ユーザー命名可能、32文字以内）
+  centerLat   Float    // 円の中心緯度
+  centerLng   Float    // 円の中心経度
+  radius      Int      @default(200) // 円の半径（メートル）
+  description String?  // エリアの説明（256文字以内）
+  createdBy   String   // エリア作成者
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 統計情報
+  postCount   Int      @default(0) // 投稿数（非正規化）
+  
+  // リレーション
+  creator     User     @relation(fields: [createdBy], references: [id])
+  posts       Post[]
 }
 
 model Post {
-  id         String   @id @default(cuid())
-  userId     String
-  content    String   // 投稿内容（256文字以内、必須）
-  imageUrls  String[] // 画像URL配列（最大4枚）
-  latitude   Float?   // 緯度（任意）
-  longitude  Float?   // 経度（任意）
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String      @id @default(cuid())
+  userId        String
+  content       String      // 投稿内容（256文字以内、必須）
+  imageUrls     String[]    // 画像URL配列（最大4枚）
+  fishingAreaId String?     // 釣りポイントID（任意）
+  latitude      Float?      // 緯度（移行期間中の既存データ用・新規投稿では非推奨）
+  longitude     Float?      // 経度（移行期間中の既存データ用・新規投稿では非推奨）
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   
   // リレーション
-  user       User      @relation(fields: [userId], references: [id])
-  likes      Like[]
-  comments   Comment[]
+  user          User        @relation(fields: [userId], references: [id])
+  fishingArea   FishingArea? @relation(fields: [fishingAreaId], references: [id])
+  likes         Like[]
+  comments      Comment[]
 }
 
 model Like {

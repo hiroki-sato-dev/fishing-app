@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { seedUsers } from './src/seed-user'
+import { seedFishingAreas } from './src/seed-fishing-area'
 import { seedPosts } from './src/seed-post'
 import { seedFollows } from './src/seed-follow'
 import { seedLikes } from './src/seed-like'
@@ -14,10 +15,12 @@ async function main() {
   await prisma.like.deleteMany()
   await prisma.follow.deleteMany()
   await prisma.post.deleteMany()
+  await prisma.fishingArea.deleteMany()
   await prisma.user.deleteMany()
 
   // 各テーブルのSeedデータを順次作成
   const users = await seedUsers(prisma)
+  await seedFishingAreas()
   const posts = await seedPosts(prisma, users)
   const follows = await seedFollows(prisma, users)
   const likes = await seedLikes(prisma, users, posts)
