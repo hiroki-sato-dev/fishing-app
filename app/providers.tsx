@@ -8,15 +8,19 @@ import { Amplify } from 'aws-amplify'
 import { Authenticator } from '@aws-amplify/ui-react'
 import '@aws-amplify/ui-react/styles.css'
 
-Amplify.configure({
-  Auth: {
-    Cognito: {
-      userPoolId: process.env.NEXT_PUBLIC_USER_POOLS_ID!,
-      userPoolClientId: process.env.NEXT_PUBLIC_USER_POOLS_WEB_CLIENT_ID!,
-      signUpVerificationMethod: 'code',
+// ssr: true でトークンをCookieに保存（Server Actionでの認証チェックに必要）
+Amplify.configure(
+  {
+    Auth: {
+      Cognito: {
+        userPoolId: process.env.NEXT_PUBLIC_USER_POOLS_ID!,
+        userPoolClientId: process.env.NEXT_PUBLIC_USER_POOLS_WEB_CLIENT_ID!,
+        signUpVerificationMethod: 'code',
+      },
     },
   },
-})
+  { ssr: true }
+)
 
 const theme = createTheme({
   palette: {

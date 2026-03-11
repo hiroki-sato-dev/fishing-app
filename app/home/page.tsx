@@ -1,8 +1,9 @@
 import { getPosts, getFishingAreas } from './actions/getPosts'
 import { SimpleMap } from '@/components/SimpleMap'
-import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, Chip, IconButton, Divider, Fab } from '@mui/material'
-import { Add as AddIcon, FavoriteBorder, Share, MoreVert, TrendingUp } from '@mui/icons-material'
-import Link from 'next/link'
+import { PostFab } from './components/PostFab'
+import { PostButton } from './components/PostButton'
+import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, Chip, IconButton, Divider } from '@mui/material'
+import { FavoriteBorder, Share, MoreVert, TrendingUp } from '@mui/icons-material'
 import type { Post } from '@/types/post'
 import type { FishingArea } from '@/types/fishing-area'
 
@@ -134,29 +135,7 @@ export default async function HomePage() {
                 <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
                   ⚡ 最新の釣果
                 </Typography>
-                <Button
-                  variant="contained"
-                  size="medium"
-                  startIcon={<AddIcon />}
-                  href="/post/new"
-                  component="a"
-                  sx={{
-                    display: { xs: 'none', lg: 'flex' },
-                    background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
-                    borderRadius: 3,
-                    fontWeight: 600,
-                    px: 3,
-                    boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #0284c7, #0d9488)',
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 6px 16px rgba(14, 165, 233, 0.4)',
-                    },
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  投稿する
-                </Button>
+                <PostButton />
               </Box>
               
               {/* Posts List */}
@@ -308,30 +287,7 @@ export default async function HomePage() {
       </Container>
 
       {/* Mobile/Tablet FAB */}
-      <Fab
-        component={Link}
-        href="/post/new"
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          display: { xs: 'flex', lg: 'none' },
-          background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
-          color: 'white',
-          width: 60,
-          height: 60,
-          boxShadow: '0 8px 24px rgba(14, 165, 233, 0.4)',
-          '&:hover': {
-            background: 'linear-gradient(135deg, #0284c7, #0d9488)',
-            transform: 'scale(1.05)',
-            boxShadow: '0 12px 32px rgba(14, 165, 233, 0.5)',
-          },
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          zIndex: 1000
-        }}
-      >
-        <AddIcon sx={{ fontSize: 28 }} />
-      </Fab>
+      <PostFab />
     </Box>
   )
 }
