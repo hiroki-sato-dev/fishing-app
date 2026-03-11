@@ -3,11 +3,25 @@ import { SimpleMap } from '@/components/SimpleMap'
 import { PostFab } from './components/PostFab'
 import { PostButton } from './components/PostButton'
 import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, Chip, IconButton, Divider } from '@mui/material'
-import { FavoriteBorder, Share, MoreVert, TrendingUp } from '@mui/icons-material'
+import { FavoriteBorder, Share, MoreVert, TrendingUp, Person } from '@mui/icons-material'
+import Link from 'next/link'
 import type { Post } from '@/types/post'
 import type { FishingArea } from '@/types/fishing-area'
+import { getServerUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { redirect } from 'next/navigation'
 
 export default async function HomePage() {
+  // ログイン済みだがDBユーザー未作成の場合はセットアップへ
+  const cognitoUser = await getServerUser()
+  if (cognitoUser) {
+    const dbUser = await prisma.user.findUnique({
+      where: { email: cognitoUser.username },
+      select: { id: true },
+    })
+    if (!dbUser) redirect('/user/setup')
+  }
+
   const postsResult = await getPosts()
   const areasResult = await getFishingAreas()
   const posts: Post[] = postsResult.success ? postsResult.posts : []
@@ -165,17 +179,22 @@ export default async function HomePage() {
                       {/* User Info */}
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar 
-                            sx={{ 
-                              width: 40, 
-                              height: 40, 
+                          <Avatar
+                            component={Link}
+                            href={`/user/${post.user.id}`}
+                            src={post.user.iconUrl ?? undefined}
+                            sx={{
+                              width: 40,
+                              height: 40,
                               mr: 2,
                               background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
                               fontWeight: 600,
-                              fontSize: 16
+                              fontSize: 16,
+                              cursor: 'pointer',
+                              textDecoration: 'none',
                             }}
                           >
-                            {post.user.name.charAt(0)}
+                            {!post.user.iconUrl && <Person />}
                           </Avatar>
                           <Box>
                             <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>

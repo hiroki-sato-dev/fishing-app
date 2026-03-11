@@ -2,23 +2,32 @@
 
 import Link from 'next/link'
 import { AppBar, Toolbar, Typography, Box, Button, Avatar, IconButton, Badge, Menu, MenuItem, Tooltip } from '@mui/material'
-import { Add as AddIcon, Notifications, Home, Explore, Logout } from '@mui/icons-material'
+import { Add as AddIcon, Notifications, Home, Explore, Logout, Person, AccountCircle } from '@mui/icons-material'
 import { useAuthenticator } from '@aws-amplify/ui-react'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { getUserProfile, type UserProfile } from '@/app/actions/getUserProfile'
 
 export const Header = () => {
   const { user, authStatus, signOut } = useAuthenticator((context) => [context.user, context.authStatus])
   const router = useRouter()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [mobileAnchorEl, setMobileAnchorEl] = useState<null | HTMLElement>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const isLoggedIn = authStatus === 'authenticated'
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      getUserProfile().then(setProfile).catch(() => setProfile(null))
+    } else {
+      setProfile(null)
+    }
+  }, [isLoggedIn])
 
   const handleSignOut = () => {
     signOut()
     router.push('/auth')
   }
-
-  const userInitial = user?.signInDetails?.loginId?.charAt(0).toUpperCase() ?? '?'
 
   return (
     <AppBar
@@ -117,13 +126,26 @@ export const Header = () => {
           {isLoggedIn ? (
             <>
               <IconButton sx={{ ml: 1 }} onClick={(e) => setAnchorEl(e.currentTarget)}>
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14, fontWeight: 600 }}>
-                  {userInitial}
+                <Avatar
+                  src={profile?.iconUrl ?? undefined}
+                  sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14, fontWeight: 600 }}
+                >
+                  {!profile?.iconUrl && <Person fontSize="small" />}
                 </Avatar>
               </IconButton>
               <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
                 <MenuItem disabled sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  {user?.signInDetails?.loginId}
+                  {profile?.name ?? user?.signInDetails?.loginId}
+                </MenuItem>
+                {profile?.id && (
+                  <MenuItem component={Link} href={`/user/${profile.id}`} onClick={() => setAnchorEl(null)}>
+                    <AccountCircle fontSize="small" sx={{ mr: 1 }} />
+                    プロフィール
+                  </MenuItem>
+                )}
+                <MenuItem component={Link} href="/user/settings" onClick={() => setAnchorEl(null)}>
+                  <Person fontSize="small" sx={{ mr: 1 }} />
+                  プロフィール編集
                 </MenuItem>
                 <MenuItem onClick={handleSignOut}>
                   <Logout fontSize="small" sx={{ mr: 1 }} />
@@ -142,14 +164,27 @@ export const Header = () => {
         <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}>
           {isLoggedIn ? (
             <>
-              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14, fontWeight: 600 }}>
-                  {userInitial}
+              <IconButton onClick={(e) => setMobileAnchorEl(e.currentTarget)}>
+                <Avatar
+                  src={profile?.iconUrl ?? undefined}
+                  sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14, fontWeight: 600 }}
+                >
+                  {!profile?.iconUrl && <Person fontSize="small" />}
                 </Avatar>
               </IconButton>
-              <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
+              <Menu anchorEl={mobileAnchorEl} open={!!mobileAnchorEl} onClose={() => setMobileAnchorEl(null)}>
                 <MenuItem disabled sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  {user?.signInDetails?.loginId}
+                  {profile?.name ?? user?.signInDetails?.loginId}
+                </MenuItem>
+                {profile?.id && (
+                  <MenuItem component={Link} href={`/user/${profile.id}`} onClick={() => setMobileAnchorEl(null)}>
+                    <AccountCircle fontSize="small" sx={{ mr: 1 }} />
+                    プロフィール
+                  </MenuItem>
+                )}
+                <MenuItem component={Link} href="/user/settings" onClick={() => setMobileAnchorEl(null)}>
+                  <Person fontSize="small" sx={{ mr: 1 }} />
+                  プロフィール編集
                 </MenuItem>
                 <MenuItem onClick={handleSignOut}>
                   <Logout fontSize="small" sx={{ mr: 1 }} />

@@ -36,3 +36,4 @@ export const getServerUser = async (): Promise<AuthUser | null> => {
     return null
   }
 }
+

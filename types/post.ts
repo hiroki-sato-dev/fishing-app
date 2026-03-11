@@ -6,6 +6,7 @@ export type Post = {
   createdAt: Date
   updatedAt: Date
   user: {
+    id: string
     name: string
     iconUrl: string | null
   }

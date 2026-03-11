@@ -5,9 +5,10 @@ import '@aws-amplify/ui-react/styles.css'
 import { I18n } from 'aws-amplify/utils'
 import { translations } from '@aws-amplify/ui-react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import type { AuthUser } from 'aws-amplify/auth'
+import { checkDbUser } from './actions/checkDbUser'
 
 I18n.putVocabularies(translations)
 I18n.setLanguage('ja')
@@ -26,11 +27,30 @@ I18n.putVocabulariesForLanguage('ja', {
 
 function RedirectIfLoggedIn({ user }: { user?: AuthUser }) {
   const router = useRouter()
+  const [checked, setChecked] = useState(false)
+
   useEffect(() => {
-    if (user) {
-      router.replace('/home')
-    }
-  }, [user, router])
+    if (!user || checked) return
+    const email = user.username // Cognitoのusernameはメールアドレス
+    console.log('[RedirectIfLoggedIn] user:', user)
+    console.log('[RedirectIfLoggedIn] email:', email)
+    if (!email) return
+    setChecked(true)
+
+    checkDbUser(email)
+      .then((result) => {
+        console.log('[RedirectIfLoggedIn] checkDbUser result:', result)
+        if (result === 'not_found') {
+          router.replace('/user/setup')
+        } else {
+          router.replace('/home')
+        }
+      })
+      .catch((err) => {
+        console.error('[RedirectIfLoggedIn] checkDbUser error:', err)
+      })
+  }, [user, checked, router])
+
   return null
 }
 

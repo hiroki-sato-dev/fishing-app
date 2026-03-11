@@ -6,6 +6,7 @@ export const getPosts = async () => {
       include: {
         user: {
           select: {
+            id: true,
             name: true,
             iconUrl: true,
           },
