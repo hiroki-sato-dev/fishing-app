@@ -2,7 +2,7 @@ export type Post = {
   id: string
   content: string
   imageUrls: string[]
-  fishingAreaId: string
+  fishingAreaId: string | null
   createdAt: Date
   updatedAt: Date
   user: {
@@ -17,6 +17,6 @@ export type Post = {
     radius: number
     description: string | null
     postCount: number
-  }
+  } | null
   likes: Array<{ id: string }>
 }
