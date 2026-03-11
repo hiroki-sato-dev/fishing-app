@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { createPostSchema, FormState } from '@/lib/schemas'
 import { createFishingArea } from './createFishingArea'
+import { getServerUser } from '@/lib/auth'
 import { z } from 'zod'
 
 export const createPost = async (
@@ -29,14 +30,17 @@ export const createPost = async (
 
     // Zodでバリデーション
     const validatedData = createPostSchema.parse(rawData)
-    
-    // 最初のユーザーを取得（簡単のため）
-    const user = await prisma.user.findFirst()
+
+    // ログイン中のユーザーを取得
+    const cognitoUser = await getServerUser()
+    if (!cognitoUser) {
+      return { success: false, message: 'ログインが必要です', redirectTo: '/auth' }
+    }
+
+    // username はメールアドレス（Cognitoの username_attributes: email 設定による）
+    const user = await prisma.user.findUnique({ where: { email: cognitoUser.username } })
     if (!user) {
-      return {
-        success: false,
-        message: 'ユーザーが見つかりません'
-      }
+      return { success: false, message: 'ユーザーが見つかりません' }
     }
 
     let actualFishingAreaId: string | undefined = fishingAreaId
