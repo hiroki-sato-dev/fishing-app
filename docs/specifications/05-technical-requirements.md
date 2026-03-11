@@ -19,12 +19,14 @@
 - **認証**: AWS Cognito + Amplify
 - **画像管理**: AWS S3 + CloudFront
 - **インフラ**: AWS（EC2/ECS、RDS等）
+- **インフラ管理**: Terraform（AWSリソースはすべてTerraformでコード管理）
 - **コンテナ**: Docker
 
 ### 5.1.4 開発・運用
 - **バージョン管理**: GitHub
 - **パッケージ管理**: npm
 - **アナリティクス**: Google Analytics
+- **IaC**: Terraform（`terraform/` ディレクトリで管理）
 
 ## 5.2 パフォーマンス要件
 
