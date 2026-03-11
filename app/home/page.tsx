@@ -159,9 +159,11 @@ export default async function HomePage() {
                 pr: { xs: 0, lg: 1 }
               }}>
                 {posts.map((post) => (
-                  <Card 
-                    key={post.id} 
-                    sx={{ 
+                  <Card
+                    key={post.id}
+                    component={Link}
+                    href={`/post/${post.id}`}
+                    sx={{
                       mb: 2,
                       borderRadius: 3,
                       overflow: 'hidden',
@@ -169,6 +171,9 @@ export default async function HomePage() {
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      textDecoration: 'none',
+                      display: 'block',
+                      cursor: 'pointer',
                       '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
@@ -180,8 +185,6 @@ export default async function HomePage() {
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Avatar
-                            component={Link}
-                            href={`/user/${post.user.id}`}
                             src={post.user.iconUrl ?? undefined}
                             sx={{
                               width: 40,
@@ -190,8 +193,6 @@ export default async function HomePage() {
                               background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
                               fontWeight: 600,
                               fontSize: 16,
-                              cursor: 'pointer',
-                              textDecoration: 'none',
                             }}
                           >
                             {!post.user.iconUrl && <Person />}

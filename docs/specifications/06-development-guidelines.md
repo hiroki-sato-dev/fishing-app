@@ -5,7 +5,44 @@
 ### 6.1.1 Next.js App Router パターン
 - **Server Components**: デフォルトでサーバーコンポーネントを使用
 - **Client Components**: 必要な場合のみ`'use client'`で明示的に指定
-- **Server Actions**: データの変更処理には Server Actions を使用
+- **Server Actions**: データの変更処理・データ取得処理には Server Actions を使用
+
+### 6.1.2 データ取得・変更の規約（重要）
+
+**Prisma のクエリは必ず `actions/` ファイルに分離する。`page.tsx` 内に直接 Prisma クエリを書かない。**
+
+```
+app/
+└── post/
+    └── [id]/
+        ├── page.tsx            # ✅ actions を呼び出すだけ
+        ├── actions/
+        │   ├── getPost.ts      # ✅ Prisma でデータ取得
+        │   └── commentActions.ts  # ✅ Prisma でデータ変更
+        └── CommentSection.tsx
+```
+
+```typescript
+// ✅ 推奨: page.tsx でのデータ取得
+// app/post/[id]/page.tsx
+import { getPost } from './actions/getPost'
+
+export default async function PostPage({ params }) {
+  const post = await getPost(params.id)
+  if (!post) notFound()
+  return <PostDetail post={post} />
+}
+
+// ✅ 推奨: actions/getPost.ts
+export const getPost = async (id: string) => {
+  return prisma.post.findUnique({ where: { id }, select: { ... } })
+}
+
+// ❌ 非推奨: page.tsx に直接 Prisma クエリを書く
+export default async function PostPage({ params }) {
+  const post = await prisma.post.findUnique({ where: { id: params.id } }) // NG
+}
+```
 
 ### 6.1.2 ディレクトリ構成
 ```

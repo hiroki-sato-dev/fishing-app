@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/auth'
 import {
   Box, Container, Avatar, Typography, Button, Chip,
@@ -7,6 +6,8 @@ import {
 } from '@mui/material'
 import { Person, FavoriteBorder } from '@mui/icons-material'
 import type { Post } from '@/types/post'
+import { UserFishingMap } from './UserFishingMap'
+import { getUser, getCurrentDbUserId } from './actions/getUser'
 
 interface Props {
   params: { id: string }
@@ -15,65 +16,25 @@ interface Props {
 export default async function UserProfilePage({ params }: Props) {
   const { id } = params
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      iconUrl: true,
-      bio: true,
-      fishingYears: true,
-      mainFishing: true,
-      isPrivate: true,
-      _count: {
-        select: {
-          posts: true,
-          followers: true,
-          following: true,
-        },
-      },
-      posts: {
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          content: true,
-          imageUrls: true,
-          fishingAreaId: true,
-          createdAt: true,
-          updatedAt: true,
-          user: { select: { name: true, iconUrl: true } },
-          fishingArea: {
-            select: {
-              id: true,
-              name: true,
-              centerLat: true,
-              centerLng: true,
-              radius: true,
-              description: true,
-              postCount: true,
-            },
-          },
-          likes: { select: { id: true } },
-        },
-      },
-    },
-  })
-
+  const user = await getUser(id)
   if (!user) notFound()
 
   const cognitoUser = await getServerUser()
-  const currentUserEmail = cognitoUser?.username ?? null
-
   let isOwnProfile = false
-  if (currentUserEmail) {
-    const currentDbUser = await prisma.user.findUnique({
-      where: { email: currentUserEmail },
-      select: { id: true },
-    })
-    isOwnProfile = currentDbUser?.id === id
+  if (cognitoUser?.username) {
+    const currentUserId = await getCurrentDbUserId(cognitoUser.username)
+    isOwnProfile = currentUserId === id
   }
 
   const posts = user.posts as Post[]
+
+  const fishingAreaMap = new Map<string, { id: string; name: string | null; centerLat: number; centerLng: number; radius: number; postCount: number }>()
+  user.posts.forEach((post) => {
+    if (post.fishingArea && !fishingAreaMap.has(post.fishingArea.id)) {
+      fishingAreaMap.set(post.fishingArea.id, post.fishingArea)
+    }
+  })
+  const userFishingAreas = Array.from(fishingAreaMap.values())
 
   return (
     <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc, #eff6ff)', pt: 10 }}>
@@ -139,6 +100,18 @@ export default async function UserProfilePage({ params }: Props) {
             </Box>
           </CardContent>
         </Card>
+
+        {/* Fishing Map */}
+        {userFishingAreas.length > 0 && (
+          <Card sx={{ borderRadius: 4, mb: 4, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+            <CardContent sx={{ p: 3, pb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                🗺️ 釣りポイント ({userFishingAreas.length}箇所)
+              </Typography>
+            </CardContent>
+            <UserFishingMap areas={userFishingAreas} height="300px" />
+          </Card>
+        )}
 
         {/* Posts */}
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
