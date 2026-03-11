@@ -3,11 +3,21 @@
 import { Authenticator } from '@aws-amplify/ui-react'
 import '@aws-amplify/ui-react/styles.css'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { Box, Typography } from '@mui/material'
+import type { AuthUser } from 'aws-amplify/auth'
+
+function RedirectIfLoggedIn({ user }: { user?: AuthUser }) {
+  const router = useRouter()
+  useEffect(() => {
+    if (user) {
+      router.replace('/home')
+    }
+  }, [user, router])
+  return null
+}
 
 export default function AuthPage() {
-  const router = useRouter()
-
   return (
     <Box
       sx={{
@@ -38,12 +48,7 @@ export default function AuthPage() {
         loginMechanisms={['email']}
         signUpAttributes={['email']}
       >
-        {({ user }) => {
-          if (user) {
-            router.push('/home')
-          }
-          return <></>
-        }}
+        {({ user }) => <RedirectIfLoggedIn user={user} />}
       </Authenticator>
     </Box>
   )

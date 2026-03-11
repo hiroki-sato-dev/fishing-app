@@ -1,41 +1,38 @@
 import { Amplify } from 'aws-amplify'
+import { createServerRunner } from '@aws-amplify/adapter-nextjs'
+import { getCurrentUser as getAmplifyCurrentUser } from 'aws-amplify/auth/server'
+import type { AuthUser } from 'aws-amplify/auth'
+import { cookies } from 'next/headers'
 
-export const configureAmplify = () => {
-  const region = process.env.NEXT_PUBLIC_AWS_REGION
-  const userPoolId = process.env.NEXT_PUBLIC_USER_POOLS_ID
-  const userPoolClientId = process.env.NEXT_PUBLIC_USER_POOLS_WEB_CLIENT_ID
-
-  if (!region || !userPoolId || !userPoolClientId) {
-    console.warn('AWS Cognito configuration is incomplete')
-    return
-  }
-
-  Amplify.configure({
-    Auth: {
-      Cognito: {
-        userPoolId,
-        userPoolClientId,
-        signUpVerificationMethod: 'code',
-      },
+const amplifyConfig = {
+  Auth: {
+    Cognito: {
+      userPoolId: process.env.NEXT_PUBLIC_USER_POOLS_ID!,
+      userPoolClientId: process.env.NEXT_PUBLIC_USER_POOLS_WEB_CLIENT_ID!,
+      signUpVerificationMethod: 'code' as const,
     },
-  })
+  },
 }
 
-export const getCurrentUser = async () => {
+// クライアントサイド用
+Amplify.configure(amplifyConfig, { ssr: true })
+
+// サーバーサイド用ランナー
+export const { runWithAmplifyServerContext } = createServerRunner({
+  config: amplifyConfig,
+})
+
+/**
+ * Server Action / Server Component でログイン中のユーザーを取得する
+ * 未ログインの場合は null を返す
+ */
+export const getServerUser = async (): Promise<AuthUser | null> => {
   try {
-    const { getCurrentUser } = await import('aws-amplify/auth')
-    return await getCurrentUser()
-  } catch (error) {
-    console.error('Error getting current user:', error)
+    return await runWithAmplifyServerContext({
+      nextServerContext: { cookies },
+      operation: (contextSpec) => getAmplifyCurrentUser(contextSpec),
+    }) as AuthUser
+  } catch {
     return null
   }
 }
-
-export const signOut = async () => {
-  try {
-    const { signOut } = await import('aws-amplify/auth')
-    await signOut()
-  } catch (error) {
-    console.error('Error signing out:', error)
-  }
-} 
