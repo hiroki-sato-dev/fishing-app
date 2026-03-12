@@ -20,7 +20,13 @@ export const getPost = async (id: string) => {
           radius: true,
         },
       },
-      likes: { select: { id: true } },
+      likes: {
+        select: {
+          id: true,
+          userId: true,
+          user: { select: { id: true, name: true, iconUrl: true } },
+        },
+      },
       comments: {
         orderBy: { createdAt: 'asc' },
         select: {

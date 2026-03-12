@@ -1,5 +1,13 @@
 import { prisma } from '@/lib/prisma'
 
+export const getFollowingIds = async (userId: string): Promise<Set<string>> => {
+  const follows = await prisma.follow.findMany({
+    where: { followerId: userId },
+    select: { followeeId: true },
+  })
+  return new Set(follows.map(f => f.followeeId))
+}
+
 export const checkDbUserExists = async (email: string): Promise<boolean> => {
   const user = await prisma.user.findUnique({
     where: { email },
@@ -8,9 +16,10 @@ export const checkDbUserExists = async (email: string): Promise<boolean> => {
   return !!user
 }
 
-export const getPosts = async () => {
+export const getPosts = async (userIds?: string[]) => {
   try {
     const posts = await prisma.post.findMany({
+      where: userIds ? { userId: { in: userIds } } : undefined,
       include: {
         user: {
           select: {
@@ -33,6 +42,13 @@ export const getPosts = async () => {
         likes: {
           select: {
             id: true,
+            userId: true,
+          },
+        },
+        comments: {
+          select: {
+            id: true,
+            user: { select: { id: true, iconUrl: true, name: true } },
           },
         },
       },

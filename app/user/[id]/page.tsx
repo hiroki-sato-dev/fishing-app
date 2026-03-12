@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getServerUser } from '@/lib/auth'
+import Link from 'next/link'
 import {
   Box, Container, Avatar, Typography, Button, Chip,
   Card, CardContent, Grid, Divider,
@@ -7,7 +8,8 @@ import {
 import { Person, FavoriteBorder } from '@mui/icons-material'
 import type { Post } from '@/types/post'
 import { UserFishingMap } from './UserFishingMap'
-import { getUser, getCurrentDbUserId } from './actions/getUser'
+import { getUser, getCurrentDbUserId, getFollowStatus } from './actions/getUser'
+import { FollowButton } from '@/components/FollowButton'
 import { extractUniqueFishingAreas } from './helpers/fishingAreas'
 
 interface Props {
@@ -22,9 +24,14 @@ export default async function UserProfilePage({ params }: Props) {
 
   const cognitoUser = await getServerUser()
   let isOwnProfile = false
+  let currentUserId: string | null = null
+  let followStatus: 'following' | 'requested' | 'none' = 'none'
   if (cognitoUser?.username) {
-    const currentUserId = await getCurrentDbUserId(cognitoUser.username)
+    currentUserId = await getCurrentDbUserId(cognitoUser.username)
     isOwnProfile = currentUserId === id
+    if (currentUserId && !isOwnProfile) {
+      followStatus = await getFollowStatus(currentUserId, id)
+    }
   }
 
   const posts = user.posts as Post[]
@@ -49,7 +56,7 @@ export default async function UserProfilePage({ params }: Props) {
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>
                     {user.name}
                   </Typography>
-                  {isOwnProfile && (
+                  {isOwnProfile ? (
                     <Button
                       variant="outlined"
                       size="small"
@@ -58,6 +65,8 @@ export default async function UserProfilePage({ params }: Props) {
                     >
                       編集
                     </Button>
+                  ) : currentUserId && (
+                    <FollowButton targetUserId={id} initialStatus={followStatus} />
                   )}
                 </Box>
 
@@ -81,11 +90,19 @@ export default async function UserProfilePage({ params }: Props) {
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>{user._count.posts}</Typography>
                     <Typography variant="caption" color="text.secondary">投稿</Typography>
                   </Box>
-                  <Box sx={{ textAlign: 'center' }}>
+                  <Box
+                    component={Link}
+                    href={`/user/${id}/follows?tab=followers`}
+                    sx={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.7 } }}
+                  >
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>{user._count.followers}</Typography>
                     <Typography variant="caption" color="text.secondary">フォロワー</Typography>
                   </Box>
-                  <Box sx={{ textAlign: 'center' }}>
+                  <Box
+                    component={Link}
+                    href={`/user/${id}/follows?tab=following`}
+                    sx={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.7 } }}
+                  >
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>{user._count.following}</Typography>
                     <Typography variant="caption" color="text.secondary">フォロー中</Typography>
                   </Box>
@@ -125,12 +142,16 @@ export default async function UserProfilePage({ params }: Props) {
             {posts.map((post) => (
               <Grid item xs={12} key={post.id}>
                 <Card
+                  component={Link}
+                  href={`/post/${post.id}`}
                   sx={{
                     borderRadius: 3,
                     background: 'rgba(255,255,255,0.9)',
                     backdropFilter: 'blur(10px)',
                     border: '1px solid rgba(255,255,255,0.2)',
                     transition: 'all 0.2s',
+                    textDecoration: 'none',
+                    display: 'block',
                     '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' },
                   }}
                 >

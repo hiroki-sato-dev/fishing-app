@@ -2,10 +2,11 @@ import { notFound } from 'next/navigation'
 import { getServerUser } from '@/lib/auth'
 import Link from 'next/link'
 import {
-  Box, Container, Card, CardContent, Avatar, Typography,
-  Chip, Divider, IconButton,
+  Box, Container, Card, CardContent, Avatar, AvatarGroup, Typography,
+  Chip, Divider, IconButton, Button, Tooltip,
 } from '@mui/material'
-import { Person, FavoriteBorder, ArrowBack } from '@mui/icons-material'
+import { Person, ArrowBack, ChatBubbleOutline } from '@mui/icons-material'
+import { LikeButton } from '@/components/LikeButton'
 import { CommentSection } from './CommentSection'
 import { PostDetailMap } from './PostDetailMap'
 import { getPost, getCurrentDbUserId } from './actions/getPost'
@@ -115,18 +116,73 @@ export default async function PostDetailPage({ params }: Props) {
 
             <Divider sx={{ mb: 2 }} />
 
-            {/* Likes */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <IconButton
-                size="small"
-                sx={{ color: 'text.secondary', '&:hover': { color: 'error.main', bgcolor: 'rgba(244,67,54,0.1)' } }}
-              >
-                <FavoriteBorder fontSize="small" />
-              </IconButton>
-              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                {post.likes.length}
-              </Typography>
+            {/* Likes & Comments */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <LikeButton
+                postId={post.id}
+                likeCount={post.likes.length}
+                isLiked={post.likes.some(l => l.userId === currentUserId)}
+                isLoggedIn={isLoggedIn}
+              />
+              {post.comments.length > 0 && (() => {
+                const uniqueUsers = post.comments.filter(
+                  (c, i, arr) => arr.findIndex(x => x.user.id === c.user.id) === i
+                )
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <ChatBubbleOutline sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mr: 0.5 }}>
+                      {post.comments.length}
+                    </Typography>
+                    <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 20, height: 20, fontSize: 10, border: '1.5px solid white' } }}>
+                      {uniqueUsers.map(c => (
+                        <Tooltip key={c.user.id} title={c.user.name} arrow>
+                          <Avatar src={c.user.iconUrl ?? undefined} sx={{ width: 20, height: 20, bgcolor: 'primary.main', fontSize: 10 }}>
+                            {!c.user.iconUrl && c.user.name[0]}
+                          </Avatar>
+                        </Tooltip>
+                      ))}
+                    </AvatarGroup>
+                  </Box>
+                )
+              })()}
             </Box>
+
+            {/* いいねしたユーザー一覧（投稿者本人のみ表示） */}
+            {currentUserId === post.user.id && post.likes.length > 0 && (
+              <Box sx={{ mt: 1.5 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                  いいねしたユーザー
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
+                  {post.likes.slice(0, 5).map((like, i) => (
+                    <Box key={like.id} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Typography
+                        component={Link}
+                        href={`/user/${like.user.id}`}
+                        variant="body2"
+                        sx={{ fontWeight: 600, textDecoration: 'none', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
+                      >
+                        {like.user.name}
+                      </Typography>
+                      {i < Math.min(post.likes.length, 5) - 1 && (
+                        <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>、</Typography>
+                      )}
+                    </Box>
+                  ))}
+                  {post.likes.length > 5 && (
+                    <Button
+                      component={Link}
+                      href={`/post/${post.id}/likes`}
+                      size="small"
+                      sx={{ fontSize: '0.75rem', p: 0, minWidth: 0, color: 'text.secondary', textDecoration: 'underline', '&:hover': { bgcolor: 'transparent', color: 'primary.main' } }}
+                    >
+                      他{post.likes.length - 5}人
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            )}
           </CardContent>
         </Card>
 

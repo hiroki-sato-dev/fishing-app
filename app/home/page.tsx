@@ -1,25 +1,42 @@
-import { getPosts, getFishingAreas, checkDbUserExists } from './actions/getPosts'
+import { getPosts, getFishingAreas, checkDbUserExists, getFollowingIds } from './actions/getPosts'
+import { getCurrentDbUserId } from '@/app/post/[id]/actions/getPost'
 import { extractPosts, extractFishingAreas } from './helpers/posts'
 import { SimpleMap } from '@/components/SimpleMap'
 import { PostFab } from './components/PostFab'
 import { PostButton } from './components/PostButton'
-import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, Chip, IconButton, Divider } from '@mui/material'
-import { FavoriteBorder, Share, MoreVert, TrendingUp, Person } from '@mui/icons-material'
+import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, AvatarGroup, Badge, Chip, IconButton, Divider, Tooltip, Tabs, Tab } from '@mui/material'
+import { ChatBubbleOutline, MoreVert, TrendingUp, Person } from '@mui/icons-material'
+import { LikeButton } from '@/components/LikeButton'
 import Link from 'next/link'
 import type { Post } from '@/types/post'
 import type { FishingArea } from '@/types/fishing-area'
 import { getServerUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
-export default async function HomePage() {
+type Props = {
+  searchParams: Promise<{ feed?: string }>
+}
+
+export default async function HomePage({ searchParams }: Props) {
+  const { feed } = await searchParams
+  const isFollowingFeed = feed === 'following'
+
   // ログイン済みだがDBユーザー未作成の場合はセットアップへ
   const cognitoUser = await getServerUser()
+  let currentDbUserId: string | null = null
   if (cognitoUser) {
     const exists = await checkDbUserExists(cognitoUser.username)
     if (!exists) redirect('/user/setup')
+    currentDbUserId = await getCurrentDbUserId(cognitoUser.username)
   }
 
-  const posts: Post[] = extractPosts(await getPosts())
+  const followingIds = currentDbUserId ? await getFollowingIds(currentDbUserId) : new Set<string>()
+
+  const followingUserIds = isFollowingFeed && currentDbUserId
+    ? [...Array.from(followingIds), currentDbUserId]
+    : undefined
+
+  const posts: Post[] = extractPosts(await getPosts(followingUserIds))
   const fishingAreas: FishingArea[] = extractFishingAreas(await getFishingAreas())
 
   return (
@@ -130,21 +147,38 @@ export default async function HomePage() {
           <Grid item xs={12} lg={4}>
             <Box sx={{ position: { xs: 'static', lg: 'sticky' }, top: 100 }}>
               {/* Header */}
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
+              <Box sx={{
                 mb: 3,
-                p: 2,
                 bgcolor: 'rgba(255, 255, 255, 0.9)',
                 backdropFilter: 'blur(10px)',
                 borderRadius: 3,
-                border: '1px solid rgba(255, 255, 255, 0.2)'
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                overflow: 'hidden'
               }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  ⚡ 最新の釣果
-                </Typography>
-                <PostButton />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, pt: 2 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    ⚡ 釣果
+                  </Typography>
+                  <PostButton />
+                </Box>
+                <Tabs
+                  value={isFollowingFeed ? 1 : 0}
+                  sx={{ px: 2, '& .MuiTabs-indicator': { bgcolor: 'primary.main' } }}
+                >
+                  <Tab
+                    label="最新の釣果"
+                    component={Link}
+                    href="/home?feed=all"
+                    sx={{ fontWeight: 600, fontSize: '0.875rem' }}
+                  />
+                  <Tab
+                    label="フォロー中"
+                    component={Link}
+                    href="/home?feed=following"
+                    sx={{ fontWeight: 600, fontSize: '0.875rem' }}
+                    disabled={!currentDbUserId}
+                  />
+                </Tabs>
               </Box>
               
               {/* Posts List */}
@@ -179,19 +213,26 @@ export default async function HomePage() {
                       {/* User Info */}
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar
-                            src={post.user.iconUrl ?? undefined}
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              mr: 2,
-                              background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
-                              fontWeight: 600,
-                              fontSize: 16,
-                            }}
+                          <Badge
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                            variant="dot"
+                            invisible={!followingIds.has(post.user.id)}
+                            sx={{ mr: 2, '& .MuiBadge-dot': { width: 10, height: 10, bgcolor: '#0ea5e9', border: '2px solid white' } }}
                           >
-                            {!post.user.iconUrl && <Person />}
-                          </Avatar>
+                            <Avatar
+                              src={post.user.iconUrl ?? undefined}
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
+                                fontWeight: 600,
+                                fontSize: 16,
+                              }}
+                            >
+                              {!post.user.iconUrl && <Person />}
+                            </Avatar>
+                          </Badge>
                           <Box>
                             <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
                               {post.user.name}
@@ -242,36 +283,37 @@ export default async function HomePage() {
                       
                       {/* Actions */}
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <IconButton 
-                            size="small"
-                            sx={{ 
-                              color: 'text.secondary',
-                              '&:hover': { 
-                                color: 'error.main',
-                                bgcolor: 'rgba(244, 67, 54, 0.1)'
-                              }
-                            }}
-                          >
-                            <FavoriteBorder fontSize="small" />
-                          </IconButton>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                            {post.likes.length}
-                          </Typography>
-                          
-                          <IconButton 
-                            size="small" 
-                            sx={{ 
-                              ml: 1,
-                              color: 'text.secondary',
-                              '&:hover': { 
-                                color: 'primary.main',
-                                bgcolor: 'rgba(14, 165, 233, 0.1)'
-                              }
-                            }}
-                          >
-                            <Share fontSize="small" />
-                          </IconButton>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <LikeButton
+                            postId={post.id}
+                            likeCount={post.likes.length}
+                            isLiked={post.likes.some(l => l.userId === currentDbUserId)}
+                            isLoggedIn={!!currentDbUserId}
+                          />
+
+                          {/* コメント */}
+                          {post.comments.length > 0 && (() => {
+                            const uniqueUsers = post.comments.filter(
+                              (c, i, arr) => arr.findIndex(x => x.user.id === c.user.id) === i
+                            )
+                            return (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <ChatBubbleOutline sx={{ fontSize: 18, color: 'text.secondary' }} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mr: 0.5 }}>
+                                  {post.comments.length}
+                                </Typography>
+                                <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 20, height: 20, fontSize: 10, border: '1.5px solid white' } }}>
+                                  {uniqueUsers.map(c => (
+                                    <Tooltip key={c.user.id} title={c.user.name} arrow>
+                                      <Avatar src={c.user.iconUrl ?? undefined} sx={{ width: 20, height: 20, bgcolor: 'primary.main', fontSize: 10 }}>
+                                        {!c.user.iconUrl && c.user.name[0]}
+                                      </Avatar>
+                                    </Tooltip>
+                                  ))}
+                                </AvatarGroup>
+                              </Box>
+                            )
+                          })()}
                         </Box>
                       </Box>
                     </CardContent>
@@ -279,7 +321,7 @@ export default async function HomePage() {
                 ))}
                 
                 {posts.length === 0 && (
-                  <Card sx={{ 
+                  <Card sx={{
                     borderRadius: 3,
                     background: 'rgba(255, 255, 255, 0.9)',
                     backdropFilter: 'blur(10px)',
@@ -287,10 +329,10 @@ export default async function HomePage() {
                   }}>
                     <CardContent sx={{ textAlign: 'center', py: 6 }}>
                       <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                        🎣 まだ投稿がありません
+                        {isFollowingFeed ? '👥 フォロー中の投稿がありません' : '🎣 まだ投稿がありません'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        最初の釣果を投稿してみませんか？
+                        {isFollowingFeed ? 'ユーザーをフォローして釣果をチェックしよう' : '最初の釣果を投稿してみませんか？'}
                       </Typography>
                     </CardContent>
                   </Card>

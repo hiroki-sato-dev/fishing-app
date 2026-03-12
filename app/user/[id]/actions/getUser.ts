@@ -55,3 +55,17 @@ export const getCurrentDbUserId = async (email: string) => {
   })
   return user?.id ?? null
 }
+
+export const getFollowStatus = async (currentUserId: string, targetUserId: string) => {
+  const [follow, request] = await Promise.all([
+    prisma.follow.findUnique({
+      where: { followerId_followeeId: { followerId: currentUserId, followeeId: targetUserId } },
+    }),
+    prisma.followRequest.findUnique({
+      where: { requesterId_requestedId: { requesterId: currentUserId, requestedId: targetUserId } },
+    }),
+  ])
+  if (follow) return 'following' as const
+  if (request) return 'requested' as const
+  return 'none' as const
+}

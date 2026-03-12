@@ -19,5 +19,6 @@ export type Post = {
     description: string | null
     postCount: number
   } | null
-  likes: Array<{ id: string }>
+  likes: Array<{ id: string; userId: string }>
+  comments: Array<{ id: string; user: { id: string; iconUrl: string | null; name: string } }>
 }
