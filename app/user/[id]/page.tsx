@@ -8,13 +8,14 @@ import { Person, FavoriteBorder } from '@mui/icons-material'
 import type { Post } from '@/types/post'
 import { UserFishingMap } from './UserFishingMap'
 import { getUser, getCurrentDbUserId } from './actions/getUser'
+import { extractUniqueFishingAreas } from './helpers/fishingAreas'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function UserProfilePage({ params }: Props) {
-  const { id } = params
+  const { id } = await params
 
   const user = await getUser(id)
   if (!user) notFound()
@@ -27,14 +28,7 @@ export default async function UserProfilePage({ params }: Props) {
   }
 
   const posts = user.posts as Post[]
-
-  const fishingAreaMap = new Map<string, { id: string; name: string | null; centerLat: number; centerLng: number; radius: number; postCount: number }>()
-  user.posts.forEach((post) => {
-    if (post.fishingArea && !fishingAreaMap.has(post.fishingArea.id)) {
-      fishingAreaMap.set(post.fishingArea.id, post.fishingArea)
-    }
-  })
-  const userFishingAreas = Array.from(fishingAreaMap.values())
+  const userFishingAreas = extractUniqueFishingAreas(user.posts)
 
   return (
     <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc, #eff6ff)', pt: 10 }}>

@@ -1,4 +1,5 @@
-import { getPosts, getFishingAreas } from './actions/getPosts'
+import { getPosts, getFishingAreas, checkDbUserExists } from './actions/getPosts'
+import { extractPosts, extractFishingAreas } from './helpers/posts'
 import { SimpleMap } from '@/components/SimpleMap'
 import { PostFab } from './components/PostFab'
 import { PostButton } from './components/PostButton'
@@ -8,24 +9,18 @@ import Link from 'next/link'
 import type { Post } from '@/types/post'
 import type { FishingArea } from '@/types/fishing-area'
 import { getServerUser } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 
 export default async function HomePage() {
   // ログイン済みだがDBユーザー未作成の場合はセットアップへ
   const cognitoUser = await getServerUser()
   if (cognitoUser) {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: cognitoUser.username },
-      select: { id: true },
-    })
-    if (!dbUser) redirect('/user/setup')
+    const exists = await checkDbUserExists(cognitoUser.username)
+    if (!exists) redirect('/user/setup')
   }
 
-  const postsResult = await getPosts()
-  const areasResult = await getFishingAreas()
-  const posts: Post[] = postsResult.success ? postsResult.posts : []
-  const fishingAreas: FishingArea[] = areasResult.success ? areasResult.fishingAreas : []
+  const posts: Post[] = extractPosts(await getPosts())
+  const fishingAreas: FishingArea[] = extractFishingAreas(await getFishingAreas())
 
   return (
     <Box sx={{ 

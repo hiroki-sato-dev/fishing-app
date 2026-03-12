@@ -1,5 +1,13 @@
 import { prisma } from '@/lib/prisma'
 
+export const checkDbUserExists = async (email: string): Promise<boolean> => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  })
+  return !!user
+}
+
 export const getPosts = async () => {
   try {
     const posts = await prisma.post.findMany({

@@ -44,30 +44,88 @@ export default async function PostPage({ params }) {
 }
 ```
 
-### 6.1.2 ディレクトリ構成
+### 6.1.3 ビジネスロジックの規約（重要）
+
+**ビジネスロジック（データ加工・変換・条件判定）は `helpers/` フォルダに責務ごとにファイル分割して切り出す。`page.tsx` 内にはロジックを書かない。ファイルを分割することでテストコードの記述もしやすくなる。**
+
+```
+app/
+└── user/
+    └── [id]/
+        ├── page.tsx            # ✅ actions/helpers を呼び出してJSXを返すだけ
+        ├── actions/
+        │   └── getUser.ts      # DB クエリ
+        └── helpers/
+            └── fishingAreas.ts # 釣りエリア関連のビジネスロジック
+```
+
+```typescript
+// ✅ 推奨: helpers/ にロジックを責務ごとに分割して切り出す
+// app/user/[id]/helpers/fishingAreas.ts
+export const extractUniqueFishingAreas = (posts: Post[]) => {
+  const map = new Map<string, FishingArea>()
+  posts.forEach((post) => {
+    if (post.fishingArea && !map.has(post.fishingArea.id)) {
+      map.set(post.fishingArea.id, post.fishingArea)
+    }
+  })
+  return Array.from(map.values())
+}
+
+// ✅ 推奨: page.tsx はシンプルに
+export default async function UserProfilePage({ params }) {
+  const user = await getUser(params.id)
+  const fishingAreas = extractUniqueFishingAreas(user.posts)
+  return <UserProfile user={user} fishingAreas={fishingAreas} />
+}
+
+// ❌ 非推奨: page.tsx にロジックを直接書く
+export default async function UserProfilePage({ params }) {
+  const user = await getUser(params.id)
+  const map = new Map()          // NG: ロジックをページに書かない
+  user.posts.forEach(post => {   // NG
+    if (post.fishingArea && !map.has(post.fishingArea.id)) {
+      map.set(post.fishingArea.id, post.fishingArea)
+    }
+  })
+}
+```
+
+### 6.1.4 ディレクトリ構成
 ```
 app/
 ├── page.tsx                     # ホーム画面（地図＋投稿一覧）
 ├── layout.tsx                   # ルートレイアウト
 ├── providers.tsx                # クライアント側プロバイダー
 ├── post/
-│   └── new/
-│       ├── page.tsx            # 投稿作成ページ
-│       ├── actions/            # Server Actions（ローカル）
-│       │   └── createPost.ts
-│       └── components/         # コンポーネント（ローカル）
-│           └── PostFormClient.tsx
+│   └── [id]/
+│       ├── page.tsx            # JSXのみ（ロジックなし）
+│       ├── actions/            # Prismaクエリ
+│       │   ├── getPost.ts
+│       │   └── commentActions.ts
+│       ├── helpers/            # ビジネスロジック（責務ごとに分割）
+│       │   └── postHelpers.ts
+│       └── CommentSection.tsx  # クライアントコンポーネント
 ├── user/
-│   └── [userId]/
-│       ├── page.tsx            # ユーザー詳細
-│       └── actions/
+│   └── [id]/
+│       ├── page.tsx
+│       ├── actions/
+│       │   └── getUser.ts
+│       ├── helpers/
+│       │   └── fishingAreas.ts
+│       └── UserFishingMap.tsx
 └── ...
 
-components/                      # 共有コンポーネント
+# app/ と並列に置くもの
+components/                     # 共有コンポーネント（app/ 外）
 ├── Header.tsx
 ├── Footer.tsx
-└── SimpleMap.tsx
-
+├── SimpleMap.tsx
+└── InteractiveMap.tsx
+types/                          # 型定義（app/ 外）
+├── post.ts
+└── fishing-area.ts
+public/                         # 静的ファイル（Next.js 必須）
 lib/                            # ユーティリティ・設定
 ├── prisma.ts                   # Prisma クライアント
 └── auth.ts                     # 認証ヘルパー
