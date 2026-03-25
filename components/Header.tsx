@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { AppBar, Toolbar, Typography, Box, Button, Avatar, IconButton, Badge, Menu, MenuItem, Tooltip } from '@mui/material'
 import { Add as AddIcon, Notifications, Home, Explore, Logout, Person, AccountCircle } from '@mui/icons-material'
 import { useAuthenticator } from '@aws-amplify/ui-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { getUserProfile, type UserProfile } from '@/app/actions/getUserProfile'
 
 export const Header = () => {
   const { user, authStatus, signOut } = useAuthenticator((context) => [context.user, context.authStatus])
   const router = useRouter()
+  const pathname = usePathname()
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [mobileAnchorEl, setMobileAnchorEl] = useState<null | HTMLElement>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -22,7 +23,7 @@ export const Header = () => {
     } else {
       setProfile(null)
     }
-  }, [isLoggedIn])
+  }, [isLoggedIn, pathname])
 
   const handleSignOut = () => {
     signOut()

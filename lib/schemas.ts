@@ -5,10 +5,10 @@ export const createPostSchema = z.object({
   content: z.string()
     .min(1, '投稿内容を入力してください')
     .max(256, '256文字以内で入力してください'),
-  imageUrl: z.string()
-    .url('有効なURL形式で入力してください')
+  imageUrls: z.array(z.string().url('有効なURL形式で入力してください'))
+    .max(4, '画像は4枚まで添付できます')
     .optional()
-    .or(z.literal('')),
+    .default([]),
   latitude: z.number()
     .min(-90, '緯度は-90から90の範囲で入力してください')
     .max(90, '緯度は-90から90の範囲で入力してください')
@@ -20,6 +20,7 @@ export const createPostSchema = z.object({
 })
 
 export type CreatePostInput = z.infer<typeof createPostSchema>
+
 
 // フォーム状態の型定義
 export type FormState = {

@@ -1,0 +1,7 @@
+# このファイルをコピーして terraform.tfvars を作成し、実際の値を入れてください
+# terraform.tfvars は .gitignore 済みのためコミットされません
+
+neon_api_key        = "neon_api_xxxxxxxxxx"
+vercel_api_token    = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
+vercel_github_repo  = "your-username/fishing-app"
+google_maps_api_key = "AIzaSyxxxxxxxxxxxxxxxxxx"

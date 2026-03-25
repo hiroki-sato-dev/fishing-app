@@ -2,12 +2,14 @@
 
 import { getServerUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 const createUserSchema = z.object({
   name: z.string().min(1, '名前は必須です').max(16, '名前は16文字以内で入力してください'),
   fishingYears: z.coerce.number().int().min(0).max(100).optional(),
   mainFishing: z.string().max(50).optional(),
+  iconUrl: z.string().url().optional().or(z.literal('')),
 })
 
 export type CreateUserState = {
@@ -37,6 +39,7 @@ export const createUser = async (
     name: formData.get('name') as string,
     fishingYears: formData.get('fishingYears') as string || undefined,
     mainFishing: formData.get('mainFishing') as string || undefined,
+    iconUrl: formData.get('iconUrl') as string || undefined,
   }
 
   const parsed = createUserSchema.safeParse(raw)
@@ -56,8 +59,10 @@ export const createUser = async (
       name: parsed.data.name,
       fishingYears: parsed.data.fishingYears ?? null,
       mainFishing: parsed.data.mainFishing ?? null,
+      iconUrl: parsed.data.iconUrl || null,
     },
   })
 
+  revalidatePath('/', 'layout')
   return { success: true, message: 'プロフィールを作成しました' }
 }

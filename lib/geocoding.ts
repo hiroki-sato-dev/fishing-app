@@ -19,7 +19,7 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
       let prefecture = ''
       let city = ''
 
-      components.forEach((component: any) => {
+      components.forEach((component: { types: string[]; long_name: string }) => {
         if (component.types.includes('administrative_area_level_1')) {
           prefecture = component.long_name
         }

@@ -14,7 +14,7 @@ export const createPost = async (
   try {
     // フォームデータをオブジェクトに変換
     const content = formData.get('content') as string
-    const imageUrl = formData.get('imageUrl') as string
+    const imageUrls = formData.getAll('imageUrls') as string[]
     const latitudeStr = formData.get('latitude') as string
     const longitudeStr = formData.get('longitude') as string
     const fishingAreaId = formData.get('fishingAreaId') as string
@@ -23,7 +23,7 @@ export const createPost = async (
 
     const rawData = {
       content,
-      imageUrl: imageUrl || undefined,
+      imageUrls: imageUrls.filter(Boolean),
       latitude: latitudeStr ? parseFloat(latitudeStr) : undefined,
       longitude: longitudeStr ? parseFloat(longitudeStr) : undefined,
     }
@@ -68,7 +68,7 @@ export const createPost = async (
       data: {
         userId: user.id,
         content: validatedData.content.trim(),
-        imageUrls: validatedData.imageUrl ? [validatedData.imageUrl] : [],
+        imageUrls: validatedData.imageUrls ?? [],
         fishingAreaId: actualFishingAreaId || undefined,
         latitude: validatedData.latitude || undefined,
         longitude: validatedData.longitude || undefined,

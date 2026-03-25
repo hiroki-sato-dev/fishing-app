@@ -11,11 +11,11 @@ import { getCurrentDbUserId } from '../actions/getPost'
 import { getFollowingIds } from '@/app/home/actions/getPosts'
 
 type Props = {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function LikesPage({ params }: Props) {
-  const { id } = params
+  const { id } = await params
 
   const postOwnerUserId = await getPostOwner(id)
   if (!postOwnerUserId) notFound()

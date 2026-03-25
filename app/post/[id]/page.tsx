@@ -12,11 +12,11 @@ import { PostDetailMap } from './PostDetailMap'
 import { getPost, getCurrentDbUserId } from './actions/getPost'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function PostDetailPage({ params }: Props) {
-  const { id } = params
+  const { id } = await params
 
   const post = await getPost(id)
   if (!post) notFound()

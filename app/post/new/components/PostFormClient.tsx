@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useActionState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createPost } from '../actions/createPost'
+import { generatePresignedUrl } from '../actions/generatePresignedUrl'
+import { convertToWebP } from '@/lib/imageUtils'
 import { reverseGeocode } from '@/lib/geocoding'
 import {
   TextField,
@@ -15,10 +17,25 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  IconButton,
+  LinearProgress,
 } from '@mui/material'
-import { LocationOn, Send, Cancel, Check, Image, EditNote } from '@mui/icons-material'
+import { LocationOn, Send, Cancel, Check, Image, EditNote, Close, AddPhotoAlternate } from '@mui/icons-material'
 import { InteractiveMap } from '@/components/InteractiveMap'
 import type { FishingArea } from '@/types/fishing-area'
+
+const MAX_IMAGES = 4
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
+
+
+type ImageItem = {
+  file: File
+  blob: Blob
+  previewUrl: string | null
+  uploadedUrl: string | null
+  status: 'pending' | 'uploading' | 'done' | 'error'
+  error: string | null
+}
 
 type PostFormClientProps = {
   fishingAreas: FishingArea[]
@@ -26,21 +43,22 @@ type PostFormClientProps = {
 
 export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
   const router = useRouter()
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<{ clearSelection?: () => void }>(null)
   const [state, formAction, isPending] = useActionState(createPost, {
     success: false,
     message: '',
   })
   
   const [content, setContent] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [images, setImages] = useState<ImageItem[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
   const [locationError, setLocationError] = useState<string>('')
   const [selectedFishingArea, setSelectedFishingArea] = useState<FishingArea | null>(null)
   const [localFishingAreas, setLocalFishingAreas] = useState<FishingArea[]>(fishingAreas)
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const [isCreatingArea, setIsCreatingArea] = useState(false)
+
   const [locationAddress, setLocationAddress] = useState<string>('')
   const [isLoadingAddress, setIsLoadingAddress] = useState(false)
 
@@ -89,8 +107,84 @@ export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
     }
   }, [])
 
-  // フォームの有効性をチェック（投稿内容は必須、位置情報は任意）
-  const isValid = !!content.trim() && content.length <= 256
+  const handleFileSelect = async (files: FileList | null) => {
+    if (!files) return
+    const remaining = MAX_IMAGES - images.length
+    const selected = Array.from(files).slice(0, remaining)
+
+    for (let i = 0; i < selected.length; i++) {
+      const file = selected[i]
+
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        setImages((prev) => [...prev, {
+          file, blob: file, previewUrl: null, uploadedUrl: null,
+          status: 'error', error: '対応していない形式です（JPEG・PNG・WebP・HEIC）',
+        }])
+        continue
+      }
+
+      // WebP変換・圧縮
+      let blob: Blob
+      let previewUrl: string | null
+      try {
+        blob = await convertToWebP(file)
+        previewUrl = URL.createObjectURL(blob)
+      } catch {
+        setImages((prev) => [...prev, {
+          file, blob: file, previewUrl: null, uploadedUrl: null,
+          status: 'error', error: '画像の変換に失敗しました',
+        }])
+        continue
+      }
+
+      const index = images.length + i
+      setImages((prev) => [...prev, {
+        file, blob, previewUrl, uploadedUrl: null, status: 'uploading', error: null,
+      }])
+
+      const result = await generatePresignedUrl(blob.type, blob.size, 'posts')
+      if (!result.success) {
+        setImages((prev) =>
+          prev.map((img, idx) => idx === index ? { ...img, status: 'error', error: result.message } : img)
+        )
+        continue
+      }
+
+      try {
+        const res = await fetch(result.uploadUrl, {
+          method: 'PUT',
+          body: blob,
+          headers: { 'Content-Type': blob.type },
+        })
+        if (!res.ok) throw new Error('アップロードに失敗しました')
+        setImages((prev) =>
+          prev.map((img, idx) =>
+            idx === index ? { ...img, status: 'done', uploadedUrl: result.publicUrl } : img
+          )
+        )
+      } catch {
+        setImages((prev) =>
+          prev.map((img, idx) =>
+            idx === index ? { ...img, status: 'error', error: 'アップロードに失敗しました' } : img
+          )
+        )
+      }
+    }
+  }
+
+  const removeImage = (index: number) => {
+    setImages((prev) => {
+      const item = prev[index]
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+      return prev.filter((_, i) => i !== index)
+    })
+  }
+
+  const isUploading = images.some((img) => img.status === 'uploading')
+  const uploadedUrls = images.filter((img) => img.status === 'done' && img.uploadedUrl).map((img) => img.uploadedUrl!)
+
+  // フォームの有効性をチェック（投稿内容は必須、アップロード中は無効）
+  const isValid = !!content.trim() && content.length <= 256 && !isUploading
 
 
   // 釣りエリア選択時の処理
@@ -116,7 +210,6 @@ export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
 
   // 新規エリア作成予定時の処理（投稿まで一時的な選択状態にする）
   const handleNewAreaCreate = async (areaData: { name?: string; centerLat: number; centerLng: number; radius: number; description?: string }) => {
-    setIsCreatingArea(true)
     try {
       console.log('Preparing new area (not saving to DB yet):', areaData)
       
@@ -153,8 +246,6 @@ export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
     } catch (error) {
       console.error('エリア準備エラー:', error)
       setLocationError('エリアの準備に失敗しました')
-    } finally {
-      setIsCreatingArea(false)
     }
   }
 
@@ -220,8 +311,8 @@ export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
       </Paper>
 
       {/* Image Section */}
-      <Paper sx={{ 
-        p: 3, 
+      <Paper sx={{
+        p: 3,
         borderRadius: 3,
         background: 'rgba(255, 255, 255, 0.7)',
         backdropFilter: 'blur(5px)',
@@ -230,39 +321,135 @@ export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Image sx={{ color: 'primary.main', mr: 1 }} />
           <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-            写真を追加（オプション）
+            写真を追加（オプション・最大4枚）
           </Typography>
         </Box>
-        
-        <TextField
-          name="imageUrl"
-          label="画像のURL"
-          type="url"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://example.com/fish-photo.jpg"
-          fullWidth
-          variant="outlined"
-          error={!!(state.errors?.imageUrl)}
-          helperText={state.errors?.imageUrl?.[0]}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-              '& fieldset': {
-                borderColor: 'rgba(14, 165, 233, 0.3)',
-              },
-              '&:hover fieldset': {
+
+        {/* アップロード済み・アップロード中の画像一覧 */}
+        {images.length > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+            {images.map((img, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  position: 'relative',
+                  width: 100,
+                  height: 100,
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  border: '1px solid',
+                  borderColor: img.status === 'error' ? 'error.main' : 'rgba(14, 165, 233, 0.3)',
+                  bgcolor: '#f5f5f5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {img.previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={img.previewUrl}
+                    alt={`画像 ${idx + 1}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <AddPhotoAlternate sx={{ color: 'text.secondary', fontSize: 40 }} />
+                )}
+
+                {/* アップロード中オーバーレイ */}
+                {img.status === 'uploading' && (
+                  <Box sx={{
+                    position: 'absolute', inset: 0,
+                    bgcolor: 'rgba(0,0,0,0.4)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: 0.5,
+                  }}>
+                    <CircularProgress size={24} sx={{ color: 'white' }} />
+                    <LinearProgress sx={{ width: '80%' }} />
+                  </Box>
+                )}
+
+                {/* エラーオーバーレイ */}
+                {img.status === 'error' && (
+                  <Box sx={{
+                    position: 'absolute', inset: 0,
+                    bgcolor: 'rgba(211,47,47,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Typography variant="caption" color="error" sx={{ textAlign: 'center', px: 0.5, fontSize: 10 }}>
+                      {img.error}
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* 削除ボタン */}
+                <IconButton
+                  size="small"
+                  onClick={() => removeImage(idx)}
+                  sx={{
+                    position: 'absolute', top: 2, right: 2,
+                    bgcolor: 'rgba(0,0,0,0.5)',
+                    color: 'white',
+                    p: 0.25,
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.7)' },
+                  }}
+                >
+                  <Close sx={{ fontSize: 14 }} />
+                </IconButton>
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        {/* ファイル選択ボタン */}
+        {images.length < MAX_IMAGES && (
+          <Box>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic"
+              multiple
+              style={{ display: 'none' }}
+              onChange={(e) => handleFileSelect(e.target.files)}
+              onClick={(e) => { (e.target as HTMLInputElement).value = '' }}
+            />
+            <Button
+              type="button"
+              variant="outlined"
+              startIcon={<AddPhotoAlternate />}
+              onClick={() => fileInputRef.current?.click()}
+              sx={{
+                borderStyle: 'dashed',
                 borderColor: 'rgba(14, 165, 233, 0.5)',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: 'primary.main',
-                borderWidth: 2,
-              }
-            }
-          }}
-        />
+                color: 'primary.main',
+                borderRadius: 2,
+                py: 1.5,
+                px: 3,
+                '&:hover': {
+                  borderColor: 'primary.main',
+                  bgcolor: 'rgba(14, 165, 233, 0.05)',
+                },
+              }}
+            >
+              写真を選択 ({images.length}/{MAX_IMAGES})
+            </Button>
+          </Box>
+        )}
+
+        {state.errors?.imageUrls && (
+          <Alert severity="error" sx={{ mt: 1, borderRadius: 2 }}>
+            {state.errors.imageUrls[0]}
+          </Alert>
+        )}
+
+        {/* アップロード済み URL を hidden input で送信 */}
+        {uploadedUrls.map((url, idx) => (
+          <input key={idx} type="hidden" name="imageUrls" value={url} />
+        ))}
+
         <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          📸 釣果の写真があるとより魅力的な投稿になります
+          📸 JPEG・PNG・WebP・HEIC 対応、1枚5MBまで
         </Typography>
       </Paper>
 

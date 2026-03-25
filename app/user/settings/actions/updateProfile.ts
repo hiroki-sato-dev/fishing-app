@@ -2,6 +2,7 @@
 
 import { getServerUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 const updateProfileSchema = z.object({
@@ -57,5 +58,6 @@ export const updateProfile = async (
     },
   })
 
+  revalidatePath('/', 'layout')
   return { success: true, message: 'プロフィールを更新しました' }
 }

@@ -8,6 +8,7 @@ import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, Av
 import { ChatBubbleOutline, MoreVert, TrendingUp, Person } from '@mui/icons-material'
 import { LikeButton } from '@/components/LikeButton'
 import Link from 'next/link'
+import NextImage from 'next/image'
 import type { Post } from '@/types/post'
 import type { FishingArea } from '@/types/fishing-area'
 import { getServerUser } from '@/lib/auth'
@@ -266,6 +267,37 @@ export default async function HomePage({ searchParams }: Props) {
                         </Typography>
                       )}
                       
+                      {/* Images */}
+                      {post.imageUrls.length > 0 && (
+                        <Box sx={{
+                          mb: 2,
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          display: 'grid',
+                          gridTemplateColumns: post.imageUrls.length === 1 ? '1fr' : '1fr 1fr',
+                          gap: '2px',
+                        }}>
+                          {post.imageUrls.slice(0, 4).map((url, i) => (
+                            <Box
+                              key={i}
+                              sx={{
+                                position: 'relative',
+                                aspectRatio: '1 / 1',
+                                gridRow: post.imageUrls.length === 3 && i === 0 ? 'span 2' : undefined,
+                              }}
+                            >
+                              <NextImage
+                                src={url}
+                                alt={`投稿画像 ${i + 1}`}
+                                fill
+                                sizes="(max-width: 600px) 50vw, 200px"
+                                style={{ objectFit: 'cover' }}
+                              />
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+
                       {/* Fishing Area */}
                       {post.fishingArea && (
                         <Box sx={{ mb: 2 }}>

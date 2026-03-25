@@ -16,17 +16,27 @@
 - **データベース**: PostgreSQL
 
 ### 5.1.3 認証・インフラ
+
+#### Phase 1 / Phase 2（現行構成）
 - **認証**: AWS Cognito + Amplify
-- **画像管理**: AWS S3 + CloudFront
-- **インフラ**: AWS（EC2/ECS、RDS等）
-- **インフラ管理**: Terraform（AWSリソースはすべてTerraformでコード管理）
-- **コンテナ**: Docker
+- **アプリホスティング**: Vercel（Next.js App Router に最適化）
+- **データベース**: Neon（Serverless PostgreSQL）
+- **画像ストレージ**: AWS S3
+- **CDN**: AWS CloudFront（永久無料枠 1TB/月）
+- **インフラ管理**: Terraform（AWS・Neon・Vercel をすべてコード管理）
+- **コンテナ**: Docker（ローカル開発用）
+
+#### Phase 3（将来構成・10,000 MAU 超以降）
+- **アプリホスティング**: AWS ECS Fargate（または App Runner）
+- **データベース**: Amazon RDS PostgreSQL
+- **ロードバランサー**: ALB
+- ※ Cognito・S3・CloudFront はそのまま継続
 
 ### 5.1.4 開発・運用
 - **バージョン管理**: GitHub
 - **パッケージ管理**: npm
 - **アナリティクス**: Google Analytics
-- **IaC**: Terraform（`terraform/` ディレクトリで管理）
+- **IaC**: Terraform（`terraform/` ディレクトリで管理。AWS・Neon・Vercel を一元管理し `terraform apply` で全環境変数まで自動注入）
 
 ## 5.2 パフォーマンス要件
 
@@ -71,7 +81,13 @@
 
 ### 5.5.2 データ制限
 - **投稿テキスト**: 256文字以内
-- **画像ファイル**: Twitter同等のサイズ制限
+- **画像ファイル**:
+  - 対応形式: JPEG / PNG / WebP / HEIC
+  - アップロード前にクライアント側で WebP 変換・圧縮（品質80%、長辺1920px 超の場合はリサイズ）
+  - HEIC は Canvas API 非対応のためそのまま送信
+  - 変換後ファイルサイズ上限: 5MB（サーバー側チェック）
+  - S3 保存パス: 投稿画像 `posts/{uuid}.webp`、プロフィール画像 `users/{uuid}.webp`
+  - CloudFront 経由で配信
 - **ユーザー名**: 16文字以内
 - **画像枚数**: 1投稿あたり4枚まで
 
@@ -83,9 +99,10 @@
 
 ### 5.6.1 必須環境
 - **Node.js**: 18以上
-- **PostgreSQL**: 14以上
+- **PostgreSQL**: 14以上（ローカル開発は Docker）
 - **Docker**: 20以上
-- **AWS CLI**: 認証設定済み
+- **AWS CLI**: 認証設定済み（profile: `fishing-app`）
+- **Terraform**: 1.5以上
 
 ### 5.6.2 推奨環境
 - **IDE**: Visual Studio Code

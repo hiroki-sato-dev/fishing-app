@@ -22,7 +22,7 @@ type NewAreaData = {
   description: string
 }
 
-export const InteractiveMap = forwardRef<any, InteractiveMapProps>(({ fishingAreas, height = '400px', onAreaSelect, onNewAreaCreate, currentLocation }, ref) => {
+export const InteractiveMap = forwardRef<{ clearSelection?: () => void }, InteractiveMapProps>(({ fishingAreas, height = '400px', onAreaSelect, onNewAreaCreate, currentLocation }, ref) => {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +42,7 @@ export const InteractiveMap = forwardRef<any, InteractiveMapProps>(({ fishingAre
   const [selectedAreaCircle, setSelectedAreaCircle] = useState<google.maps.Circle | null>(null)
   
   // エリアハイライト関数
-  const highlightArea = (area: any, fillColor: string, strokeColor: string) => {
+  const highlightArea = (area: { centerLat: number; centerLng: number; radius: number }, fillColor: string, strokeColor: string) => {
     if (selectedAreaCircle) {
       selectedAreaCircle.setMap(null)
     }
@@ -68,7 +68,7 @@ export const InteractiveMap = forwardRef<any, InteractiveMapProps>(({ fishingAre
     if (currentLocation && mapInstanceRef.current) {
       mapInstanceRef.current.panTo(currentLocation)
       mapInstanceRef.current.setZoom(15)
-      setHasUserInteracted(false) // 現在地に戻したのでフラグをリセット
+      // setHasUserInteracted(false)
     }
   }
 
@@ -107,7 +107,7 @@ export const InteractiveMap = forwardRef<any, InteractiveMapProps>(({ fishingAre
   }
 
   const handleAreaSelect = (area: FishingArea) => {
-    setHasUserInteracted(true) // ユーザーが操作したことを記録
+    // setHasUserInteracted(true)
     
     if (onAreaSelect) {
       onAreaSelect(area)
@@ -121,7 +121,7 @@ export const InteractiveMap = forwardRef<any, InteractiveMapProps>(({ fishingAre
   }
 
   const handleNewAreaCreate = () => {
-    setHasUserInteracted(true) // ユーザーが操作したことを記録
+    // setHasUserInteracted(true)
     
     if (onNewAreaCreate && clickedPosition) {
       const newArea = {
@@ -351,8 +351,8 @@ export const InteractiveMap = forwardRef<any, InteractiveMapProps>(({ fishingAre
     initializeMap()
   }, [fishingAreas, currentLocation])
 
-  // ユーザーが操作したかどうかのフラグ
-  const [hasUserInteracted, setHasUserInteracted] = useState(false)
+  // ユーザーが操作したかどうかのフラグ（将来の機能拡張用）
+  // const [hasUserInteracted, setHasUserInteracted] = useState(false)
 
   if (error) {
     return (

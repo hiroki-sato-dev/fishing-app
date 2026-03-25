@@ -6,6 +6,7 @@ import {
   Card, CardContent, Grid, Divider,
 } from '@mui/material'
 import { Person, FavoriteBorder } from '@mui/icons-material'
+import NextImage from 'next/image'
 import type { Post } from '@/types/post'
 import { UserFishingMap } from './UserFishingMap'
 import { getUser, getCurrentDbUserId, getFollowStatus } from './actions/getUser'
@@ -159,6 +160,37 @@ export default async function UserProfilePage({ params }: Props) {
                     <Typography variant="body1" sx={{ mb: 1.5, lineHeight: 1.6 }}>
                       {post.content}
                     </Typography>
+
+                    {post.imageUrls.length > 0 && (
+                      <Box sx={{
+                        mb: 1.5,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        display: 'grid',
+                        gridTemplateColumns: post.imageUrls.length === 1 ? '1fr' : '1fr 1fr',
+                        gap: '2px',
+                        maxWidth: { xs: '100%', md: 360 },
+                      }}>
+                        {post.imageUrls.slice(0, 4).map((url, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              position: 'relative',
+                              aspectRatio: '1 / 1',
+                              gridRow: post.imageUrls.length === 3 && i === 0 ? 'span 2' : undefined,
+                            }}
+                          >
+                            <NextImage
+                              src={url}
+                              alt={`投稿画像 ${i + 1}`}
+                              fill
+                              sizes="(max-width: 600px) 90vw, 360px"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
 
                     {post.fishingArea && (
                       <Chip
