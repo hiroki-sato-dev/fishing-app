@@ -105,6 +105,7 @@ export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
         { timeout: 10000, enableHighAccuracy: false }
       )
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleFileSelect = async (files: FileList | null) => {
@@ -319,7 +320,7 @@ export const PostFormClient = ({ fishingAreas }: PostFormClientProps) => {
         border: '1px solid rgba(255, 255, 255, 0.3)'
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Image sx={{ color: 'primary.main', mr: 1 }} />
+          <Image sx={{ color: 'primary.main', mr: 1 }} aria-hidden="true" />
           <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
             写真を追加（オプション・最大4枚）
           </Typography>
