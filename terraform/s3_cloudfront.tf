@@ -2,10 +2,11 @@
 # S3 バケット（画像アップロード用）
 # -----------------------------------------------
 resource "aws_s3_bucket" "images" {
-  bucket = "${var.app_name}-images"
+  bucket = "${local.resource_prefix}-images"
 
   tags = {
     App = var.app_name
+    Env = var.env
   }
 }
 
@@ -26,7 +27,8 @@ resource "aws_s3_bucket_cors_configuration" "images" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["PUT", "GET"]
-    allowed_origins = ["*"] # 本番運用時は Vercel ドメインに限定する
+    # prd はドメインを限定。dev/stg はワイルドカード（Vercel プレビュー URL が動的なため）
+    allowed_origins = var.env == "prd" ? ["https://${var.app_name}.vercel.app"] : ["*"]
     max_age_seconds = 3000
   }
 }
@@ -37,7 +39,7 @@ resource "aws_s3_bucket_cors_configuration" "images" {
 
 # Origin Access Control（S3 への署名付きリクエスト）
 resource "aws_cloudfront_origin_access_control" "images" {
-  name                              = "${var.app_name}-images-oac"
+  name                              = "${local.resource_prefix}-images-oac"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -46,7 +48,7 @@ resource "aws_cloudfront_origin_access_control" "images" {
 resource "aws_cloudfront_distribution" "images" {
   enabled         = true
   is_ipv6_enabled = true
-  comment         = "${var.app_name} images"
+  comment         = "${local.resource_prefix} images"
 
   origin {
     domain_name              = aws_s3_bucket.images.bucket_regional_domain_name
@@ -69,7 +71,7 @@ resource "aws_cloudfront_distribution" "images" {
     }
 
     min_ttl     = 0
-    default_ttl = 86400   # 1日
+    default_ttl = 86400    # 1日
     max_ttl     = 31536000 # 1年
   }
 
@@ -85,6 +87,7 @@ resource "aws_cloudfront_distribution" "images" {
 
   tags = {
     App = var.app_name
+    Env = var.env
   }
 }
 
@@ -109,7 +112,6 @@ resource "aws_s3_bucket_policy" "images" {
     ]
   })
 
-  # CloudFront より先に OAC / distribution が作成されている必要がある
   depends_on = [aws_cloudfront_distribution.images]
 }
 
@@ -117,15 +119,16 @@ resource "aws_s3_bucket_policy" "images" {
 # IAM（アプリから Presigned URL を発行するための権限）
 # -----------------------------------------------
 resource "aws_iam_user" "app" {
-  name = "${var.app_name}-app"
+  name = "${local.resource_prefix}-app"
 
   tags = {
     App = var.app_name
+    Env = var.env
   }
 }
 
 resource "aws_iam_user_policy" "app_s3" {
-  name = "${var.app_name}-s3-policy"
+  name = "${local.resource_prefix}-s3-policy"
   user = aws_iam_user.app.name
 
   policy = jsonencode({

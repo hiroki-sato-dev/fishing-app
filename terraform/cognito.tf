@@ -1,6 +1,6 @@
 # Cognito User Pool
 resource "aws_cognito_user_pool" "main" {
-  name = "${var.app_name}-user-pool"
+  name = "${local.resource_prefix}-user-pool"
 
   # メールアドレスでログイン
   username_attributes      = ["email"]
@@ -32,12 +32,13 @@ resource "aws_cognito_user_pool" "main" {
 
   tags = {
     App = var.app_name
+    Env = var.env
   }
 }
 
 # Cognito App Client（Amplify から接続するためのクライアント）
 resource "aws_cognito_user_pool_client" "main" {
-  name         = "${var.app_name}-client"
+  name         = "${local.resource_prefix}-client"
   user_pool_id = aws_cognito_user_pool.main.id
 
   # シークレットなし（フロントエンドから直接接続するため）
@@ -50,9 +51,9 @@ resource "aws_cognito_user_pool_client" "main" {
   ]
 
   # トークン有効期限
-  access_token_validity  = 1   # 1時間
-  id_token_validity      = 1   # 1時間
-  refresh_token_validity = 30  # 30日
+  access_token_validity  = 1  # 1時間
+  id_token_validity      = 1  # 1時間
+  refresh_token_validity = 30 # 30日
 
   token_validity_units {
     access_token  = "hours"

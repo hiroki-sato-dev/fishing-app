@@ -1,4 +1,8 @@
-# .env に設定する値を出力
+output "env" {
+  description = "現在の環境名"
+  value       = var.env
+}
+
 output "cognito_user_pool_id" {
   description = "NEXT_PUBLIC_USER_POOLS_ID に設定する値"
   value       = aws_cognito_user_pool.main.id
@@ -37,8 +41,13 @@ output "iam_secret_access_key" {
 
 output "database_url" {
   description = "DATABASE_URL に設定する値"
-  value       = neon_project.main.connection_uri
+  value       = local.database_url
   sensitive   = true
+}
+
+output "neon_branch_id" {
+  description = "Neon ブランチ ID（dev/stg のみ）"
+  value       = var.env != "prd" ? neon_branch.env[0].id : "prd uses main branch"
 }
 
 output "vercel_project_url" {

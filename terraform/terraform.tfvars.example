@@ -1,7 +1,19 @@
 # このファイルをコピーして terraform.tfvars を作成し、実際の値を入れてください
 # terraform.tfvars は .gitignore 済みのためコミットされません
 
+# 環境名（dev / stg / prd）
+env = "dev"
+
 neon_api_key        = "neon_api_xxxxxxxxxx"
+# neon_org_id は有料プラン・組織利用時のみ設定。無料プランは削除またはコメントアウト
+# neon_org_id       = "org_xxxxxxxxxx"
+
 vercel_api_token    = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
 vercel_github_repo  = "your-username/fishing-app"
 google_maps_api_key = "AIzaSyxxxxxxxxxxxxxxxxxx"
+
+# AWS IAM シークレットアクセスキー
+# 新規作成時: 不要（Terraform が自動生成）
+# 既存キーをインポートする場合: AWS コンソールで再発行したキーを設定
+# （AWS は IAM アクセスキーのシークレットをインポート後に返さないため）
+# aws_iam_secret_access_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

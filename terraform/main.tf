@@ -29,3 +29,8 @@ provider "neon" {
 provider "vercel" {
   api_token = var.vercel_api_token
 }
+
+locals {
+  # dev は既存リソース名に合わせてサフィックスなし、stg/prd はサフィックス付き
+  resource_prefix = var.env == "dev" ? var.app_name : "${var.app_name}-${var.env}"
+}

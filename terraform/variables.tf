@@ -10,6 +10,17 @@ variable "app_name" {
   default     = "fishing-app"
 }
 
+variable "env" {
+  description = "環境名 (dev / stg / prd)"
+  type        = string
+  default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "stg", "prd"], var.env)
+    error_message = "env は dev / stg / prd のいずれかを指定してください。"
+  }
+}
+
 variable "neon_api_key" {
   description = "Neon API キー（Neon ダッシュボード → Account → API Keys）"
   type        = string
@@ -17,8 +28,9 @@ variable "neon_api_key" {
 }
 
 variable "neon_org_id" {
-  description = "Neon Organization ID（Neon ダッシュボード → Settings → Organization）"
+  description = "Neon Organization ID（有料プラン・組織利用時のみ設定。無料プランは null のまま）"
   type        = string
+  default     = null
 }
 
 variable "vercel_api_token" {
@@ -36,4 +48,11 @@ variable "google_maps_api_key" {
   description = "Google Maps API キー"
   type        = string
   sensitive   = true
+}
+
+variable "aws_iam_secret_access_key" {
+  description = "AWS IAM シークレットアクセスキー（インポート時は既存キーを設定。新規作成時は不要）"
+  type        = string
+  sensitive   = true
+  default     = null
 }

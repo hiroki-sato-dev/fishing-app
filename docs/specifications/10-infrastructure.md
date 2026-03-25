@@ -7,6 +7,36 @@
 
 ---
 
+## 環境戦略
+
+### 環境一覧
+
+| 環境 | 用途 | 状態 |
+|---|---|---|
+| **dev** | 開発・動作確認 | 構築対象 |
+| **stg** | ステージング・受け入れテスト | 将来構築 |
+| **prd** | 本番 | 将来構築 |
+
+### 環境分離の方針
+
+- **Terraform Workspace** でステートファイルを環境ごとに分離（`dev` / `stg` / `prd`）
+- **全 AWS リソース名**に環境サフィックスを付与（例: `fishing-app-dev-user-pool`）
+- **Neon はブランチで環境分離**（1プロジェクト内で `dev` / `main` ブランチを使い分け）
+- **Vercel は環境ごとに別プロジェクト**（`fishing-app-dev` / `fishing-app-prd` 等）
+
+### Neon ブランチ戦略
+
+```
+Neon Project: fishing-app
+├── main branch    → prd 環境（将来）
+├── staging branch → stg 環境（将来）
+└── dev branch     → dev 環境（現在構築対象）
+```
+
+ブランチごとに独立した接続 URL が発行される。スキーマ変更は dev ブランチで検証後 main へ反映。
+
+---
+
 ## フェーズ別推奨構成
 
 ### Phase 1: ローンチ期（〜100 MAU）　目安: **$0〜$1/月**
@@ -48,6 +78,7 @@
 - Neon はサーバーレス：アクセスがなければ**コスト $0**
 - Prisma の接続設定はほぼそのまま（`DATABASE_URL` を差し替えるだけ）
 - Neon → RDS の移行は `pg_dump / pg_restore` で簡単
+- リージョン: 東京なし。**シンガポール（`aws-ap-southeast-1`）が最近傍**
 
 ### Vercel を EC2/ECS より推奨する理由（Phase 1-2）
 - Next.js App Router・Server Actions との親和性が最高
@@ -66,7 +97,10 @@
 ```
 現在（ローカル開発）
     ↓
-Phase 1: Vercel Hobby + Neon + S3 + Cognito
+dev 環境構築: Vercel + Neon dev ブランチ + S3 + Cognito（すべて -dev サフィックス）
+   → $0〜$1/月
+    ↓（stg/prd 環境追加）
+Phase 1: Vercel Hobby + Neon + S3 + Cognito（prd）
    → $0〜$1/月
    → git push でデプロイ、DATABASE_URL 差し替えのみ
     ↓（〜1,000 MAU 超えたら）
@@ -78,24 +112,6 @@ Phase 3: ECS Fargate + RDS + ALB + S3 + CF + Cognito（全 AWS）
    → Vercel → ECS: Dockerfile 追加 + GitHub Actions CI/CD 設定
    → Neon → RDS: pg_dump → RDS へリストア
 ```
-
----
-
-## Phase 1 デプロイ手順
-
-1. **Neon** アカウント作成 → プロジェクト作成 → `DATABASE_URL` 取得
-2. **Vercel** アカウント作成 → GitHub リポジトリ接続
-3. **Vercel 環境変数**を設定
-   ```
-   DATABASE_URL
-   NEXT_PUBLIC_AWS_REGION
-   NEXT_PUBLIC_USER_POOLS_ID
-   NEXT_PUBLIC_USER_POOLS_WEB_CLIENT_ID
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-   ```
-4. Prisma マイグレーション実行（Neon DB に対して）
-5. **S3 バケット**作成 + CORS 設定（画像アップロード用）
-6. `git push` → 自動デプロイ
 
 ---
 
@@ -114,3 +130,7 @@ Phase 3: ECS Fargate + RDS + ALB + S3 + CF + Cognito（全 AWS）
 - テキストデータ中心の SNS なら 1,000 投稿 × 1KB ≒ 1MB 程度
 - 画像は S3 に置くので DB は小さく保てる
 - 相当長い間は無料枠で運用可能
+
+**Q: Neon に東京リージョンはないの？**
+- ない。アジア圏は `aws-ap-southeast-1`（シンガポール）と `aws-ap-southeast-2`（シドニー）のみ
+- シンガポールが日本から最も近いため `aws-ap-southeast-1` を採用

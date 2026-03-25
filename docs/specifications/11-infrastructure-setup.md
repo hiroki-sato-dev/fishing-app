@@ -5,10 +5,9 @@
 ```
 1. 事前準備（ツールのインストール）
 2. AWS CLI の設定
-3. Terraform で AWS リソース作成（S3・CloudFront・Cognito・IAM）
-4. Neon でデータベース作成
-5. Vercel でアプリをデプロイ
-6. 環境変数を設定して完了
+3. Terraform workspace で dev 環境を作成
+4. terraform apply で全リソース一括作成
+5. Prisma マイグレーション（Neon dev ブランチに対して）
 ```
 
 ---
@@ -76,7 +75,7 @@ aws sts get-caller-identity --profile fishing-app
 
 ---
 
-## 3. Terraform で AWS リソースを作成
+## 3. Terraform で dev 環境を構築
 
 `terraform/` ディレクトリで作業します。
 
@@ -87,22 +86,46 @@ cd terraform
 terraform init
 ```
 
-`Terraform has been successfully initialized!` と表示されればOK。
+### 3-2. dev workspace を作成・切り替え
 
-### 3-2. 作成されるリソースの確認
+```bash
+terraform workspace new dev
+# 既に作成済みの場合は: terraform workspace select dev
+
+# 現在の workspace を確認
+terraform workspace show
+# dev が表示されればOK
+```
+
+### 3-3. tfvars ファイルを用意
+
+`terraform/terraform.tfvars` に以下を設定（`.gitignore` 済み）：
+
+```hcl
+env                 = "dev"
+neon_api_key        = "..."   # Neon ダッシュボード → Account → API Keys
+neon_org_id         = "..."   # Neon ダッシュボード → Settings → Organization
+vercel_api_token    = "..."   # Vercel ダッシュボード → Settings → Tokens
+vercel_github_repo  = "your-username/fishing-app"
+google_maps_api_key = "AIzaSy..."
+```
+
+### 3-4. 作成されるリソースの確認
 
 ```bash
 terraform plan
 ```
 
 以下のリソースが作成されることを確認：
-- `aws_cognito_user_pool` — 認証用ユーザープール
-- `aws_cognito_user_pool_client` — Amplify 接続用クライアント
-- `aws_s3_bucket` — 画像アップロード用バケット
-- `aws_cloudfront_distribution` — 画像配信用 CDN
-- `aws_iam_user` / `aws_iam_access_key` — アプリ用 IAM 認証情報
+- `aws_cognito_user_pool` — `fishing-app-dev-user-pool`
+- `aws_cognito_user_pool_client` — `fishing-app-dev-client`
+- `aws_s3_bucket` — `fishing-app-dev-images`
+- `aws_cloudfront_distribution` — dev 用 CDN
+- `aws_iam_user` — `fishing-app-dev-app`
+- `neon_branch` — Neon の `dev` ブランチ
+- `vercel_project` — `fishing-app-dev`
 
-### 3-3. リソースの作成
+### 3-5. リソースの作成
 
 ```bash
 terraform apply
@@ -112,21 +135,20 @@ terraform apply
 
 > CloudFront の作成は 5〜10 分かかることがあります。
 
-### 3-4. 出力値の確認
-
-作成完了後、環境変数に必要な値が表示されます。
+### 3-6. 出力値の確認
 
 ```bash
 terraform output
 ```
 
 ```
-aws_region                = "ap-northeast-1"
-cloudfront_domain         = "https://xxxx.cloudfront.net"
-cognito_user_pool_id      = "ap-northeast-1_xxxxxxxx"
+aws_region                  = "ap-northeast-1"
+cloudfront_domain           = "https://xxxx.cloudfront.net"
+cognito_user_pool_id        = "ap-northeast-1_xxxxxxxx"
 cognito_user_pool_client_id = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
-iam_access_key_id         = "AKIAxxxxxxxxxxxxxxxxxx"
-s3_bucket_name            = "fishing-app-images"
+iam_access_key_id           = "AKIAxxxxxxxxxxxxxxxxxx"
+s3_bucket_name              = "fishing-app-dev-images"
+vercel_project_url          = "https://fishing-app-dev.vercel.app"
 ```
 
 シークレットキー（`sensitive` のため通常は非表示）を確認する場合：
@@ -136,87 +158,54 @@ terraform output -raw iam_secret_access_key
 
 ---
 
-## 4. Neon でデータベースを作成
+## 4. Prisma マイグレーション
 
-### 4-1. アカウント作成
-
-1. [neon.tech](https://neon.tech) にアクセス
-2. 「Sign up」→ GitHub でサインアップ（推奨）
-
-### 4-2. プロジェクト作成
-
-1. 「New Project」をクリック
-2. 設定：
-   - **Name**: `fishing-app`
-   - **PostgreSQL version**: `16`（最新）
-   - **Region**: `Tokyo (AWS ap-northeast-1)` — アプリと同じリージョン
-3. 「Create Project」をクリック
-
-### 4-3. 接続文字列をコピー
-
-プロジェクト作成直後に表示される「Connection string」をコピー。
-
-```
-postgresql://username:password@ep-xxxx.ap-northeast-1.aws.neon.tech/neondb?sslmode=require
-```
-
-> Dashboard → 「Connection Details」からいつでも確認できます。
-
-### 4-4. マイグレーションの実行
-
-プロジェクトルートに戻り、Neon の接続文字列を使ってマイグレーションを実行。
+Neon dev ブランチの接続文字列を使ってマイグレーションを実行。
 
 ```bash
 cd ..  # プロジェクトルートへ
 
-# .env.production.local を一時作成（または直接環境変数を指定）
-DATABASE_URL="postgresql://..." npx prisma migrate deploy
+# terraform output から DATABASE_URL を取得
+DATABASE_URL=$(cd terraform && terraform output -raw database_url)
+
+# マイグレーション実行
+DATABASE_URL="$DATABASE_URL" npx prisma migrate deploy
 ```
 
 ---
 
-## 5. Vercel でデプロイ
+## 5. ローカル開発環境
 
-### 5-1. アカウント作成
+ローカル開発は引き続き Docker（PostgreSQL）を使用：
 
-1. [vercel.com](https://vercel.com) にアクセス
-2. 「Sign Up」→ GitHub でサインアップ（推奨）
+```bash
+npm run docker:db    # PostgreSQL 起動
+npm run db:migrate   # マイグレーション実行
+npm run dev          # 開発サーバー起動
+```
 
-### 5-2. プロジェクトの作成
-
-1. ダッシュボードの「Add New...」→「Project」
-2. GitHub リポジトリを検索して「Import」
-3. 設定はデフォルトのまま（Next.js は自動検出される）
-4. **「Deploy」を押す前に** 環境変数を設定する（手順 6）
-
-### 5-3. 環境変数の設定
-
-「Configure Project」→「Environment Variables」で以下を設定：
-
-| 変数名 | 値 | どこから |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://...` | Neon の接続文字列 |
-| `NEXT_PUBLIC_AWS_REGION` | `ap-northeast-1` | terraform output |
-| `NEXT_PUBLIC_USER_POOLS_ID` | `ap-northeast-1_xxxxx` | terraform output |
-| `NEXT_PUBLIC_USER_POOLS_WEB_CLIENT_ID` | `xxxxxxxxxx` | terraform output |
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | `AIzaSy...` | Google Cloud Console |
-| `AWS_ACCESS_KEY_ID` | `AKIAxxxx` | terraform output |
-| `AWS_SECRET_ACCESS_KEY` | `xxxxxxxx` | terraform output -raw iam_secret_access_key |
-| `AWS_REGION` | `ap-northeast-1` | 固定値 |
-| `AWS_S3_BUCKET_NAME` | `fishing-app-images` | terraform output |
-| `NEXT_PUBLIC_CLOUDFRONT_DOMAIN` | `https://xxxx.cloudfront.net` | terraform output |
-
-### 5-4. デプロイ
-
-「Deploy」ボタンをクリック。完了すると `xxxx.vercel.app` のURLが発行されます。
+`.env.local` の `DATABASE_URL` はローカル Docker を向けておく。
 
 ---
 
-## 6. デプロイ後の確認
+## 環境の切り替え（将来: stg / prd 追加時）
 
-1. 発行された URL にアクセス
-2. ログイン画面が表示されること
-3. サインアップして投稿できること
+```bash
+# stg 環境を追加
+terraform workspace new stg
+terraform apply -var="env=stg"
+
+# prd 環境を追加
+terraform workspace new prd
+terraform apply -var="env=prd"
+
+# workspace 一覧確認
+terraform workspace list
+#   default
+# * dev
+#   stg
+#   prd
+```
 
 ---
 
@@ -224,6 +213,8 @@ DATABASE_URL="postgresql://..." npx prisma migrate deploy
 
 | 操作 | コマンド |
 |---|---|
+| 現在の workspace 確認 | `terraform workspace show` |
+| workspace 切り替え | `terraform workspace select dev` |
 | リソースの変更を確認 | `terraform plan` |
 | 変更を適用 | `terraform apply` |
 | 出力値を確認 | `terraform output` |
@@ -235,10 +226,11 @@ DATABASE_URL="postgresql://..." npx prisma migrate deploy
 `.gitignore` に追加して GitHub にコミットしないよう注意してください。
 
 ```bash
-# .gitignore に追記
+# .gitignore に追記（未設定の場合）
 echo "terraform/*.tfstate" >> .gitignore
 echo "terraform/*.tfstate.backup" >> .gitignore
 echo "terraform/.terraform/" >> .gitignore
+echo "terraform/terraform.tfvars" >> .gitignore
 ```
 
 ---
@@ -249,7 +241,10 @@ echo "terraform/.terraform/" >> .gitignore
 → AWS CLI のプロファイル設定を確認: `aws configure --profile fishing-app`
 
 **`Error: BucketAlreadyExists`**
-→ S3 バケット名はグローバルで一意。`variables.tf` の `app_name` に suffix を追加して変更する。
+→ S3 バケット名はグローバルで一意。`env` 変数に suffix を追加して変更する。
+
+**`workspace` コマンドが使えない**
+→ `terraform init` が完了していることを確認。
 
 **Vercel ビルドエラー `DATABASE_URL not set`**
-→ Vercel の「Settings」→「Environment Variables」で設定されているか確認。再デプロイが必要な場合は「Redeploy」ボタンをクリック。
+→ `terraform apply` が完了しているか確認。Vercel ダッシュボードで環境変数が注入されているか確認し、必要なら「Redeploy」。
