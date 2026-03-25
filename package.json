@@ -37,7 +37,7 @@
     "@types/sass": "^1.43.1",
     "@vis.gl/react-google-maps": "^1.7.1",
     "aws-amplify": "^6.15.3",
-    "next": "15.3.5",
+    "next": "^15.5.14",
     "prisma": "^6.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
