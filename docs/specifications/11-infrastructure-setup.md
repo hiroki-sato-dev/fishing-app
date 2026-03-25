@@ -104,10 +104,14 @@ terraform workspace show
 ```hcl
 env                 = "dev"
 neon_api_key        = "..."   # Neon ダッシュボード → Account → API Keys
-neon_org_id         = "..."   # Neon ダッシュボード → Settings → Organization
+# neon_org_id は有料プラン・組織利用時のみ設定。無料プランは不要
+# neon_org_id       = "org_..."
 vercel_api_token    = "..."   # Vercel ダッシュボード → Settings → Tokens
 vercel_github_repo  = "your-username/fishing-app"
 google_maps_api_key = "AIzaSy..."
+
+# 既存 IAM アクセスキーをインポートする場合のみ設定（新規作成時は不要）
+# aws_iam_secret_access_key = "..."
 ```
 
 ### 3-4. 作成されるリソースの確認
@@ -116,14 +120,15 @@ google_maps_api_key = "AIzaSy..."
 terraform plan
 ```
 
-以下のリソースが作成されることを確認：
-- `aws_cognito_user_pool` — `fishing-app-dev-user-pool`
-- `aws_cognito_user_pool_client` — `fishing-app-dev-client`
-- `aws_s3_bucket` — `fishing-app-dev-images`
+以下のリソースが作成されることを確認（dev は suffix なし）：
+- `aws_cognito_user_pool` — `fishing-app-user-pool`
+- `aws_cognito_user_pool_client` — `fishing-app-client`
+- `aws_s3_bucket` — `fishing-app-images`
 - `aws_cloudfront_distribution` — dev 用 CDN
-- `aws_iam_user` — `fishing-app-dev-app`
+- `aws_iam_user` — `fishing-app-app`
+- `neon_project` — `fishing-app`（初回のみ）
 - `neon_branch` — Neon の `dev` ブランチ
-- `vercel_project` — `fishing-app-dev`
+- `vercel_project` — `fishing-app-dev`（production_branch = `develop`）
 
 ### 3-5. リソースの作成
 
@@ -147,13 +152,14 @@ cloudfront_domain           = "https://xxxx.cloudfront.net"
 cognito_user_pool_id        = "ap-northeast-1_xxxxxxxx"
 cognito_user_pool_client_id = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
 iam_access_key_id           = "AKIAxxxxxxxxxxxxxxxxxx"
-s3_bucket_name              = "fishing-app-dev-images"
+neon_branch_id              = "br-xxxxxxxxxxxxxxxxxx"
+s3_bucket_name              = "fishing-app-images"
 vercel_project_url          = "https://fishing-app-dev.vercel.app"
 ```
 
-シークレットキー（`sensitive` のため通常は非表示）を確認する場合：
+DATABASE_URL（sensitive）を確認する場合：
 ```bash
-terraform output -raw iam_secret_access_key
+terraform output -raw database_url
 ```
 
 ---
@@ -184,7 +190,7 @@ npm run db:migrate   # マイグレーション実行
 npm run dev          # 開発サーバー起動
 ```
 
-`.env.local` の `DATABASE_URL` はローカル Docker を向けておく。
+`.env` の `DATABASE_URL` はローカル Docker を向けておく（Vercel 側は Terraform が自動で Neon の URL を注入）。
 
 ---
 
@@ -248,3 +254,21 @@ echo "terraform/terraform.tfvars" >> .gitignore
 
 **Vercel ビルドエラー `DATABASE_URL not set`**
 → `terraform apply` が完了しているか確認。Vercel ダッシュボードで環境変数が注入されているか確認し、必要なら「Redeploy」。
+
+**Vercel ビルドエラー `PrismaClientInitializationError`**
+→ `package.json` の build スクリプトを確認。`"build": "prisma generate && next build"` になっていること。
+
+**Terraform コマンドが極端に遅い（30秒以上）**
+→ Apple Silicon Mac で Intel バイナリ（Rosetta2 経由）が動いている可能性。
+```bash
+file $(which terraform)  # "arm64" でなければ再インストール
+brew uninstall terraform
+# HashiCorp Releases から darwin_arm64 バイナリを手動インストール
+```
+
+**`Error: state file locked`**
+→ バックグラウンドで terraform プロセスが残っている可能性。
+```bash
+pkill -f terraform-provider
+rm terraform/.terraform.tfstate.lock.info  # 残っている場合のみ
+```

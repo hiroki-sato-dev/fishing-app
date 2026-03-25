@@ -3,7 +3,7 @@
 ## 5.1 技術スタック
 
 ### 5.1.1 フロントエンド
-- **フレームワーク**: Next.js 15（App Router）
+- **フレームワーク**: Next.js 15.5.14（App Router）
 - **言語**: TypeScript
 - **UIライブラリ**: React + Material-UI
 - **スタイリング**: Tailwind CSS

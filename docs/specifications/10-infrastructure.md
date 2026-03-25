@@ -13,14 +13,14 @@
 
 | 環境 | 用途 | 状態 |
 |---|---|---|
-| **dev** | 開発・動作確認 | 構築対象 |
+| **dev** | 開発・動作確認 | **構築済み** |
 | **stg** | ステージング・受け入れテスト | 将来構築 |
 | **prd** | 本番 | 将来構築 |
 
 ### 環境分離の方針
 
 - **Terraform Workspace** でステートファイルを環境ごとに分離（`dev` / `stg` / `prd`）
-- **全 AWS リソース名**に環境サフィックスを付与（例: `fishing-app-dev-user-pool`）
+- **リソース命名**: dev は suffix なし（例: `fishing-app-user-pool`）、stg/prd は `-{env}` suffix（例: `fishing-app-stg-user-pool`）
 - **Neon はブランチで環境分離**（1プロジェクト内で `dev` / `main` ブランチを使い分け）
 - **Vercel は環境ごとに別プロジェクト**（`fishing-app-dev` / `fishing-app-prd` 等）
 
@@ -97,7 +97,7 @@ Neon Project: fishing-app
 ```
 現在（ローカル開発）
     ↓
-dev 環境構築: Vercel + Neon dev ブランチ + S3 + Cognito（すべて -dev サフィックス）
+dev 環境構築: Vercel + Neon dev ブランチ + S3 + Cognito ✅ 構築済み
    → $0〜$1/月
     ↓（stg/prd 環境追加）
 Phase 1: Vercel Hobby + Neon + S3 + Cognito（prd）
