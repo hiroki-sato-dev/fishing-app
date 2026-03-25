@@ -1,10 +1,19 @@
+locals {
+  production_branch = {
+    dev = "develop"
+    stg = "staging"
+    prd = "main"
+  }
+}
+
 resource "vercel_project" "main" {
   name      = "${var.app_name}-${var.env}"
   framework = "nextjs"
 
   git_repository = {
-    type = "github"
-    repo = var.vercel_github_repo
+    type              = "github"
+    repo              = var.vercel_github_repo
+    production_branch = local.production_branch[var.env]
   }
 }
 
