@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
-import { Loader } from '@googlemaps/js-api-loader'
-import { Box, Typography } from '@mui/material'
+import { useEffect, useRef, useState } from 'react'
+import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
+import { Box } from '@mui/material'
 
 type AreaPin = {
   id: string
@@ -18,124 +18,131 @@ type Props = {
   height?: string
 }
 
-export function UserFishingMap({ areas, height = '300px' }: Props) {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState<string | null>(null)
+type AreaCircleProps = {
+  area: AreaPin
+  onClick: () => void
+}
+
+const AreaCircle = ({ area, onClick }: AreaCircleProps) => {
+  const mapsLib = useMapsLibrary('maps')
+  const map = useMap()
+  const onClickRef = useRef(onClick)
+  useEffect(() => { onClickRef.current = onClick }, [onClick])
 
   useEffect(() => {
-    const initMap = async () => {
-      if (!mapRef.current || areas.length === 0) return
+    if (!mapsLib || !map) return
 
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-      if (!apiKey) {
-        setError('Google Maps APIキーが設定されていません')
-        return
-      }
+    const circle = new google.maps.Circle({
+      center: { lat: area.centerLat, lng: area.centerLng },
+      radius: area.radius,
+      fillColor: '#3B82F6',
+      fillOpacity: 0.25,
+      strokeColor: '#1D4ED8',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      clickable: true,
+      map,
+    })
 
-      try {
-        const loader = new Loader({ apiKey, version: 'weekly', libraries: ['maps'] })
-        await loader.importLibrary('maps')
+    const listener = circle.addListener('click', () => onClickRef.current())
 
-        // 全エリアの中心を計算して初期表示位置にする
-        const avgLat = areas.reduce((sum, a) => sum + a.centerLat, 0) / areas.length
-        const avgLng = areas.reduce((sum, a) => sum + a.centerLng, 0) / areas.length
+    return () => {
+      google.maps.event.removeListener(listener)
+      circle.setMap(null)
+    }
+  }, [mapsLib, map, area.centerLat, area.centerLng, area.radius])
 
-        const map = new google.maps.Map(mapRef.current, {
-          center: { lat: avgLat, lng: avgLng },
-          zoom: 12,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          zoomControl: true,
-        })
+  return null
+}
 
-        const bounds = new google.maps.LatLngBounds()
+const MapSetup = ({ areas }: { areas: AreaPin[] }) => {
+  const map = useMap()
+  const mapsLib = useMapsLibrary('maps')
+  const initializedRef = useRef(false)
 
-        areas.forEach((area) => {
-          const center = { lat: area.centerLat, lng: area.centerLng }
+  useEffect(() => {
+    if (!map || !mapsLib || initializedRef.current || areas.length === 0) return
 
-          const circle = new google.maps.Circle({
-            center,
-            radius: area.radius,
-            fillColor: '#3B82F6',
-            fillOpacity: 0.25,
-            strokeColor: '#1D4ED8',
-            strokeOpacity: 0.8,
-            strokeWeight: 2,
-            map,
-          })
-
-          const marker = new google.maps.Marker({
-            position: center,
-            map,
-            title: area.name || '釣りポイント',
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#EF4444',
-              fillOpacity: 1,
-              strokeWeight: 2,
-              strokeColor: '#FFFFFF',
-            },
-            label: {
-              text: area.postCount.toString(),
-              color: '#FFFFFF',
-              fontSize: '12px',
-              fontWeight: 'bold',
-            },
-          })
-
-          const infoWindow = new google.maps.InfoWindow({
-            content: `
-              <div style="padding: 8px; min-width: 160px;">
-                <p style="margin: 0; font-weight: 600; color: #1D4ED8; font-size: 14px;">
-                  ${area.name || '釣りポイント'}
-                </p>
-                <p style="margin: 4px 0 0; color: #666; font-size: 12px;">投稿数: ${area.postCount}件</p>
-              </div>
-            `,
-          })
-
-          marker.addListener('click', () => infoWindow.open(map, marker))
-          circle.addListener('click', () => infoWindow.open(map, marker))
-
-          bounds.union(circle.getBounds()!)
-        })
-
-        // 全エリアが収まるようにズーム調整
-        if (areas.length > 1) {
-          map.fitBounds(bounds)
-          const listener = google.maps.event.addListener(map, 'idle', () => {
-            if (map.getZoom()! > 15) map.setZoom(15)
-            google.maps.event.removeListener(listener)
-          })
-        } else {
-          map.setCenter({ lat: areas[0].centerLat, lng: areas[0].centerLng })
-          map.setZoom(15)
-        }
-      } catch (err) {
-        console.error('Google Maps loading error:', err)
-        setError('地図の読み込みに失敗しました')
-      }
+    if (areas.length === 1) {
+      map.setCenter({ lat: areas[0].centerLat, lng: areas[0].centerLng })
+      map.setZoom(15)
+    } else {
+      const bounds = new google.maps.LatLngBounds()
+      areas.forEach(area => bounds.extend({ lat: area.centerLat, lng: area.centerLng }))
+      map.fitBounds(bounds)
+      const listener = google.maps.event.addListener(map, 'idle', () => {
+        if ((map.getZoom() ?? 0) > 15) map.setZoom(15)
+        google.maps.event.removeListener(listener)
+      })
     }
 
-    initMap()
-  }, [areas])
+    initializedRef.current = true
+  }, [map, mapsLib, areas])
+
+  return null
+}
+
+export function UserFishingMap({ areas, height = '300px' }: Props) {
+  const [selectedArea, setSelectedArea] = useState<AreaPin | null>(null)
 
   if (areas.length === 0) return null
 
-  if (error) {
-    return (
-      <Box sx={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#f5f5f5', borderRadius: 2, border: '1px solid #ddd' }}>
-        <Typography variant="body2" color="text.secondary">{error}</Typography>
-      </Box>
-    )
-  }
+  const avgLat = areas.reduce((sum, a) => sum + a.centerLat, 0) / areas.length
+  const avgLng = areas.reduce((sum, a) => sum + a.centerLng, 0) / areas.length
 
   return (
-    <div
-      ref={mapRef}
-      style={{ height, width: '100%', borderRadius: 8, border: '1px solid #ddd' }}
-    />
+    <Box sx={{ height, borderRadius: 2, border: '1px solid #ddd', overflow: 'hidden' }}>
+      <Map
+        style={{ width: '100%', height: '100%' }}
+        defaultCenter={{ lat: avgLat, lng: avgLng }}
+        defaultZoom={12}
+        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID'}
+        mapTypeControl={false}
+        streetViewControl={false}
+        fullscreenControl={false}
+        zoomControl
+      >
+        <MapSetup areas={areas} />
+
+        {areas.map(area => (
+          <AreaCircle key={area.id} area={area} onClick={() => setSelectedArea(area)} />
+        ))}
+
+        {areas.map(area => (
+          <AdvancedMarker
+            key={area.id}
+            position={{ lat: area.centerLat, lng: area.centerLng }}
+            title={area.name || '釣りポイント'}
+            onClick={() => setSelectedArea(area)}
+          >
+            <div style={{
+              width: 24, height: 24, borderRadius: '50%',
+              backgroundColor: '#EF4444', border: '2px solid white',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontSize: '12px', fontWeight: 'bold',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            }}>
+              {area.postCount}
+            </div>
+          </AdvancedMarker>
+        ))}
+
+        {selectedArea && (
+          <InfoWindow
+            position={{ lat: selectedArea.centerLat, lng: selectedArea.centerLng }}
+            onCloseClick={() => setSelectedArea(null)}
+          >
+            <div style={{ padding: '8px', minWidth: '160px' }}>
+              <p style={{ margin: 0, fontWeight: 600, color: '#1D4ED8', fontSize: '14px' }}>
+                {selectedArea.name || '釣りポイント'}
+              </p>
+              <p style={{ margin: '4px 0 0', color: '#666', fontSize: '12px' }}>
+                投稿数: {selectedArea.postCount}件
+              </p>
+            </div>
+          </InfoWindow>
+        )}
+      </Map>
+    </Box>
   )
 }

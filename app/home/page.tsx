@@ -22,7 +22,6 @@ export default async function HomePage({ searchParams }: Props) {
   const { feed } = await searchParams
   const isFollowingFeed = feed === 'following'
 
-  // ログイン済みだがDBユーザー未作成の場合はセットアップへ
   const cognitoUser = await getServerUser()
   let currentDbUserId: string | null = null
   if (cognitoUser) {
@@ -41,73 +40,64 @@ export default async function HomePage({ searchParams }: Props) {
   const fishingAreas: FishingArea[] = extractFishingAreas(await getFishingAreas())
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #f8fafc, #eff6ff)',
-      pt: 10
+      pt: { xs: 8, md: 10 },
     }}>
-      <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+
         {/* Hero Section */}
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography 
-            variant="h3" 
-            component="h1" 
-            sx={{ 
+        <Box sx={{ mb: { xs: 2, sm: 4 }, textAlign: 'center' }}>
+          <Typography
+            component="h1"
+            sx={{
               fontWeight: 800,
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '3rem' },
               background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              mb: 1,
-              letterSpacing: '-0.02em'
+              mb: 0.5,
+              letterSpacing: '-0.02em',
             }}
           >
             🌊 今日の釣果をチェック
           </Typography>
-          <Typography 
-            variant="h6" 
-            color="text.secondary" 
-            sx={{ maxWidth: '600px', mx: 'auto', fontWeight: 400 }}
+          <Typography
+            color="text.secondary"
+            sx={{
+              fontSize: { xs: '0.8rem', sm: '0.95rem', md: '1.1rem' },
+              maxWidth: '600px',
+              mx: 'auto',
+              fontWeight: 400,
+              display: { xs: 'none', sm: 'block' },
+            }}
           >
             リアルタイムで更新される釣果情報で、次の釣り場を見つけよう
           </Typography>
         </Box>
-        
-        <Grid container spacing={4}>
+
+        <Grid container spacing={{ xs: 2, md: 4 }}>
           {/* 地図エリア - デスクトップのみ表示 */}
           <Grid item xs={12} lg={8} sx={{ display: { xs: 'none', lg: 'block' } }}>
-            <Card 
-              sx={{ 
-                borderRadius: 4, 
-                overflow: 'hidden',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                background: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
+            <Card sx={{
+              borderRadius: 4,
+              overflow: 'hidden',
+              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
+              background: 'rgba(255,255,255,0.9)',
+              backdropFilter: 'blur(10px)',
+            }}>
               <Box sx={{ p: 3, pb: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
                     🗺️ 釣りエリアマップ
-                    <Chip 
-                      label={`${fishingAreas.length}エリア`} 
-                      color="primary" 
-                      size="small"
-                      sx={{ ml: 1, fontWeight: 600 }}
-                    />
+                    <Chip label={`${fishingAreas.length}エリア`} color="primary" size="small" sx={{ ml: 1, fontWeight: 600 }} />
                   </Typography>
                   <Button
                     variant="outlined"
                     startIcon={<TrendingUp />}
-                    sx={{ 
-                      borderRadius: 2,
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
-                      '&:hover': {
-                        bgcolor: 'rgba(14, 165, 233, 0.1)'
-                      }
-                    }}
+                    sx={{ borderRadius: 2, borderColor: 'primary.main', color: 'primary.main', '&:hover': { bgcolor: 'rgba(14,165,233,0.1)' } }}
                   >
                     トレンド
                   </Button>
@@ -117,47 +107,31 @@ export default async function HomePage({ searchParams }: Props) {
             </Card>
           </Grid>
 
-          {/* モバイル用 - コンパクトな地図 */}
-          <Grid item xs={12} sx={{ display: { xs: 'block', lg: 'none' }, mb: 2 }}>
-            <Card 
-              sx={{ 
-                borderRadius: 4, 
-                overflow: 'hidden',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                background: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <Box sx={{ p: 2, pb: 0 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                  🗺️ 釣りエリアマップ
-                  <Chip 
-                    label={`${fishingAreas.length}エリア`} 
-                    color="primary" 
-                    size="small"
-                    sx={{ fontWeight: 600 }}
-                  />
-                </Typography>
+          {/* モバイル用コンパクト地図 */}
+          <Grid item xs={12} sx={{ display: { xs: 'block', lg: 'none' } }}>
+            <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+              <Box sx={{ px: 2, pt: 1.5, pb: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>🗺️ 釣りエリアマップ</Typography>
+                <Chip label={`${fishingAreas.length}`} color="primary" size="small" sx={{ fontWeight: 600, height: 20, fontSize: '0.7rem' }} />
               </Box>
-              <SimpleMap fishingAreas={fishingAreas} height="250px" />
+              <SimpleMap fishingAreas={fishingAreas} height="180px" />
             </Card>
           </Grid>
 
           {/* 投稿一覧 */}
           <Grid item xs={12} lg={4}>
             <Box sx={{ position: { xs: 'static', lg: 'sticky' }, top: 100 }}>
-              {/* Header */}
+              {/* Header + Tabs */}
               <Box sx={{
-                mb: 3,
-                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                mb: 2,
+                bgcolor: 'rgba(255,255,255,0.9)',
                 backdropFilter: 'blur(10px)',
                 borderRadius: 3,
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                overflow: 'hidden'
+                border: '1px solid rgba(255,255,255,0.2)',
+                overflow: 'hidden',
               }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, pt: 2 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: { xs: 2, sm: 2 }, pt: { xs: 1.5, sm: 2 } }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                     ⚡ 釣果
                   </Typography>
                   <PostButton />
@@ -167,26 +141,26 @@ export default async function HomePage({ searchParams }: Props) {
                   sx={{ px: 2, '& .MuiTabs-indicator': { bgcolor: 'primary.main' } }}
                 >
                   <Tab
-                    label="最新の釣果"
+                    label="最新"
                     component={Link}
                     href="/home?feed=all"
-                    sx={{ fontWeight: 600, fontSize: '0.875rem' }}
+                    sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' }, minWidth: 0, px: { xs: 1.5, sm: 2 } }}
                   />
                   <Tab
                     label="フォロー中"
                     component={Link}
                     href="/home?feed=following"
-                    sx={{ fontWeight: 600, fontSize: '0.875rem' }}
+                    sx={{ fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.875rem' }, minWidth: 0, px: { xs: 1.5, sm: 2 } }}
                     disabled={!currentDbUserId}
                   />
                 </Tabs>
               </Box>
-              
+
               {/* Posts List */}
-              <Box sx={{ 
-                maxHeight: { xs: 'none', lg: 600 }, 
-                overflowY: { xs: 'visible', lg: 'auto' }, 
-                pr: { xs: 0, lg: 1 }
+              <Box sx={{
+                maxHeight: { xs: 'none', lg: 600 },
+                overflowY: { xs: 'visible', lg: 'auto' },
+                pr: { xs: 0, lg: 1 },
               }}>
                 {posts.map((post) => (
                   <Card
@@ -194,88 +168,85 @@ export default async function HomePage({ searchParams }: Props) {
                     component={Link}
                     href={`/post/${post.id}`}
                     sx={{
-                      mb: 2,
+                      mb: { xs: 1.5, sm: 2 },
                       borderRadius: 3,
                       overflow: 'hidden',
-                      background: 'rgba(255, 255, 255, 0.9)',
+                      background: 'rgba(255,255,255,0.9)',
                       backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
                       textDecoration: 'none',
                       display: 'block',
-                      cursor: 'pointer',
                       '&:hover': {
                         transform: 'translateY(-2px)',
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                      }
+                        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+                      },
                     }}
                   >
-                    <CardContent sx={{ p: 3 }}>
+                    <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
                       {/* User Info */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, sm: 2 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <Badge
                             overlap="circular"
                             anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                             variant="dot"
                             invisible={!followingIds.has(post.user.id)}
-                            sx={{ mr: 2, '& .MuiBadge-dot': { width: 10, height: 10, bgcolor: '#0ea5e9', border: '2px solid white' } }}
+                            sx={{ mr: { xs: 1.5, sm: 2 }, '& .MuiBadge-dot': { width: 10, height: 10, bgcolor: '#0ea5e9', border: '2px solid white' } }}
                           >
                             <Avatar
                               src={post.user.iconUrl ?? undefined}
                               sx={{
-                                width: 40,
-                                height: 40,
+                                width: { xs: 36, sm: 40 },
+                                height: { xs: 36, sm: 40 },
                                 background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
                                 fontWeight: 600,
-                                fontSize: 16,
+                                fontSize: { xs: 14, sm: 16 },
                               }}
                             >
                               {!post.user.iconUrl && <Person />}
                             </Avatar>
                           </Badge>
                           <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                            <Typography sx={{ fontWeight: 600, lineHeight: 1.2, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                               {post.user.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {new Date(post.createdAt).toLocaleDateString('ja-JP', { 
-                                month: 'short', 
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                              {new Date(post.createdAt).toLocaleDateString('ja-JP', {
+                                month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
-                                minute: '2-digit'
+                                minute: '2-digit',
                               })}
                             </Typography>
                           </Box>
                         </Box>
-                        <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                          <MoreVert />
+                        <IconButton size="small" sx={{ color: 'text.secondary', p: { xs: 0.5, sm: 1 } }}>
+                          <MoreVert fontSize="small" />
                         </IconButton>
                       </Box>
-                      
+
                       {/* Post Content */}
                       {post.content && (
-                        <Typography 
-                          variant="body1" 
-                          sx={{ 
-                            mb: 2, 
-                            lineHeight: 1.6,
-                            fontSize: '0.95rem'
-                          }}
-                        >
+                        <Typography sx={{
+                          mb: { xs: 1.5, sm: 2 },
+                          lineHeight: 1.6,
+                          fontSize: { xs: '0.875rem', sm: '0.95rem' },
+                        }}>
                           {post.content}
                         </Typography>
                       )}
-                      
+
                       {/* Images */}
                       {post.imageUrls.length > 0 && (
                         <Box sx={{
-                          mb: 2,
+                          mb: { xs: 1.5, sm: 2 },
                           borderRadius: 2,
                           overflow: 'hidden',
                           display: 'grid',
                           gridTemplateColumns: post.imageUrls.length === 1 ? '1fr' : '1fr 1fr',
                           gap: '2px',
+                          maxWidth: 300,
                         }}>
                           {post.imageUrls.slice(0, 4).map((url, i) => (
                             <Box
@@ -290,7 +261,7 @@ export default async function HomePage({ searchParams }: Props) {
                                 src={url}
                                 alt={`投稿画像 ${i + 1}`}
                                 fill
-                                sizes="(max-width: 600px) 50vw, 200px"
+                                sizes="300px"
                                 style={{ objectFit: 'cover' }}
                               />
                             </Box>
@@ -300,70 +271,61 @@ export default async function HomePage({ searchParams }: Props) {
 
                       {/* Fishing Area */}
                       {post.fishingArea && (
-                        <Box sx={{ mb: 2 }}>
-                          <Chip 
+                        <Box sx={{ mb: { xs: 1, sm: 1.5 } }}>
+                          <Chip
                             label={`📍 ${post.fishingArea.name || '釣りポイント'}`}
                             variant="outlined"
                             color="primary"
                             size="small"
-                            sx={{ fontSize: '0.8rem', fontWeight: 500 }}
+                            sx={{ fontSize: { xs: '0.7rem', sm: '0.8rem' }, fontWeight: 500 }}
                           />
                         </Box>
                       )}
 
-                      <Divider sx={{ mb: 2 }} />
-                      
-                      {/* Actions */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <LikeButton
-                            postId={post.id}
-                            likeCount={post.likes.length}
-                            isLiked={post.likes.some(l => l.userId === currentDbUserId)}
-                            isLoggedIn={!!currentDbUserId}
-                          />
+                      <Divider sx={{ mb: { xs: 1, sm: 1.5 } }} />
 
-                          {/* コメント */}
-                          {post.comments.length > 0 && (() => {
-                            const uniqueUsers = post.comments.filter(
-                              (c, i, arr) => arr.findIndex(x => x.user.id === c.user.id) === i
-                            )
-                            return (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <ChatBubbleOutline sx={{ fontSize: 18, color: 'text.secondary' }} />
-                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mr: 0.5 }}>
-                                  {post.comments.length}
-                                </Typography>
-                                <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 20, height: 20, fontSize: 10, border: '1.5px solid white' } }}>
-                                  {uniqueUsers.map(c => (
-                                    <Tooltip key={c.user.id} title={c.user.name} arrow>
-                                      <Avatar src={c.user.iconUrl ?? undefined} sx={{ width: 20, height: 20, bgcolor: 'primary.main', fontSize: 10 }}>
-                                        {!c.user.iconUrl && c.user.name[0]}
-                                      </Avatar>
-                                    </Tooltip>
-                                  ))}
-                                </AvatarGroup>
-                              </Box>
-                            )
-                          })()}
-                        </Box>
+                      {/* Actions */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <LikeButton
+                          postId={post.id}
+                          likeCount={post.likes.length}
+                          isLiked={post.likes.some(l => l.userId === currentDbUserId)}
+                          isLoggedIn={!!currentDbUserId}
+                        />
+                        {post.comments.length > 0 && (() => {
+                          const uniqueUsers = post.comments.filter(
+                            (c, i, arr) => arr.findIndex(x => x.user.id === c.user.id) === i
+                          )
+                          return (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <ChatBubbleOutline sx={{ fontSize: 16, color: 'text.secondary' }} />
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, mr: 0.5 }}>
+                                {post.comments.length}
+                              </Typography>
+                              <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 18, height: 18, fontSize: 9, border: '1.5px solid white' } }}>
+                                {uniqueUsers.map(c => (
+                                  <Tooltip key={c.user.id} title={c.user.name} arrow>
+                                    <Avatar src={c.user.iconUrl ?? undefined} sx={{ width: 18, height: 18, bgcolor: 'primary.main', fontSize: 9 }}>
+                                      {!c.user.iconUrl && c.user.name[0]}
+                                    </Avatar>
+                                  </Tooltip>
+                                ))}
+                              </AvatarGroup>
+                            </Box>
+                          )
+                        })()}
                       </Box>
                     </CardContent>
                   </Card>
                 ))}
-                
+
                 {posts.length === 0 && (
-                  <Card sx={{
-                    borderRadius: 3,
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                  }}>
-                    <CardContent sx={{ textAlign: 'center', py: 6 }}>
-                      <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                  <Card sx={{ borderRadius: 3 }}>
+                    <CardContent sx={{ textAlign: 'center', py: { xs: 4, sm: 6 } }}>
+                      <Typography sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem' }, fontWeight: 600 }} color="text.secondary">
                         {isFollowingFeed ? '👥 フォロー中の投稿がありません' : '🎣 まだ投稿がありません'}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                         {isFollowingFeed ? 'ユーザーをフォローして釣果をチェックしよう' : '最初の釣果を投稿してみませんか？'}
                       </Typography>
                     </CardContent>
@@ -375,7 +337,6 @@ export default async function HomePage({ searchParams }: Props) {
         </Grid>
       </Container>
 
-      {/* Mobile/Tablet FAB */}
       <PostFab />
     </Box>
   )

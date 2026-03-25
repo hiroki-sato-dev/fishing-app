@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
-import { Loader } from '@googlemaps/js-api-loader'
-import { Box, Typography } from '@mui/material'
+import { useEffect } from 'react'
+import { Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
+import { Box } from '@mui/material'
 
 type Props = {
   centerLat: number
@@ -12,92 +12,62 @@ type Props = {
   height?: string
 }
 
-export function PostDetailMap({ centerLat, centerLng, radius, areaName, height = '280px' }: Props) {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState<string | null>(null)
+type InnerProps = {
+  centerLat: number
+  centerLng: number
+  radius: number
+}
+
+const FishingCircle = ({ centerLat, centerLng, radius }: InnerProps) => {
+  const mapsLib = useMapsLibrary('maps')
+  const map = useMap()
 
   useEffect(() => {
-    const initMap = async () => {
-      if (!mapRef.current) return
+    if (!mapsLib || !map) return
 
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-      if (!apiKey) {
-        setError('Google Maps APIキーが設定されていません')
-        return
-      }
+    const circle = new google.maps.Circle({
+      center: { lat: centerLat, lng: centerLng },
+      radius,
+      fillColor: '#3B82F6',
+      fillOpacity: 0.25,
+      strokeColor: '#1D4ED8',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      clickable: false,
+      map,
+    })
 
-      try {
-        const loader = new Loader({ apiKey, version: 'weekly', libraries: ['maps'] })
-        await loader.importLibrary('maps')
+    return () => { circle.setMap(null) }
+  }, [mapsLib, map, centerLat, centerLng, radius])
 
-        const center = { lat: centerLat, lng: centerLng }
+  return null
+}
 
-        const map = new google.maps.Map(mapRef.current, {
-          center,
-          zoom: 15,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          zoomControl: true,
-        })
-
-        // 釣りエリアの円
-        new google.maps.Circle({
-          center,
-          radius,
-          fillColor: '#3B82F6',
-          fillOpacity: 0.25,
-          strokeColor: '#1D4ED8',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          map,
-        })
-
-        // 中心マーカー
-        new google.maps.Marker({
-          position: center,
-          map,
-          title: areaName || '釣りポイント',
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 10,
-            fillColor: '#EF4444',
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: '#FFFFFF',
-          },
-        })
-      } catch (err) {
-        console.error('Google Maps loading error:', err)
-        setError('地図の読み込みに失敗しました')
-      }
-    }
-
-    initMap()
-  }, [centerLat, centerLng, radius, areaName])
-
-  if (error) {
-    return (
-      <Box
-        sx={{
-          height,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: '#f5f5f5',
-          borderRadius: 2,
-          border: '1px solid #ddd',
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">{error}</Typography>
-      </Box>
-    )
-  }
-
+export function PostDetailMap({ centerLat, centerLng, radius, areaName, height = '280px' }: Props) {
   return (
-    <div
-      ref={mapRef}
-      style={{ height, width: '100%', borderRadius: 8, border: '1px solid #ddd' }}
-    />
+    <Box sx={{ height, borderRadius: 2, border: '1px solid #ddd', overflow: 'hidden' }}>
+      <Map
+        style={{ width: '100%', height: '100%' }}
+        defaultCenter={{ lat: centerLat, lng: centerLng }}
+        defaultZoom={15}
+        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID'}
+        mapTypeControl={false}
+        streetViewControl={false}
+        fullscreenControl={false}
+        zoomControl
+      >
+        <FishingCircle centerLat={centerLat} centerLng={centerLng} radius={radius} />
+        <AdvancedMarker
+          position={{ lat: centerLat, lng: centerLng }}
+          title={areaName || '釣りポイント'}
+        >
+          <div style={{
+            width: 20, height: 20, borderRadius: '50%',
+            backgroundColor: '#EF4444', border: '2px solid white',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          }} />
+        </AdvancedMarker>
+      </Map>
+    </Box>
   )
 }

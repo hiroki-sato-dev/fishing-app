@@ -5,7 +5,7 @@ import {
   Box, Container, Avatar, Typography, Button, Chip,
   Card, CardContent, Grid, Divider,
 } from '@mui/material'
-import { Person, FavoriteBorder } from '@mui/icons-material'
+import { Person, FavoriteBorder, LocationOn, Waves } from '@mui/icons-material'
 import NextImage from 'next/image'
 import type { Post } from '@/types/post'
 import { UserFishingMap } from './UserFishingMap'
@@ -39,193 +39,238 @@ export default async function UserProfilePage({ params }: Props) {
   const userFishingAreas = extractUniqueFishingAreas(user.posts)
 
   return (
-    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc, #eff6ff)', pt: 10 }}>
-      <Container maxWidth="md" sx={{ py: 4 }}>
+    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc, #eff6ff)', pt: { xs: 8, md: 10 } }}>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+
         {/* Profile Card */}
-        <Card sx={{ borderRadius: 4, mb: 4, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
-          <CardContent sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3, flexWrap: 'wrap' }}>
+        <Card sx={{ borderRadius: 4, mb: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          {/* Header gradient */}
+          <Box sx={{ height: 80, background: 'linear-gradient(135deg, #3B82F6, #0ea5e9, #14b8a6)' }} />
+          <CardContent sx={{ px: { xs: 3, md: 5 }, pt: 0, pb: { xs: 3, md: 4 } }}>
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
+              mb: 2,
+              flexWrap: 'wrap',
+              gap: 2,
+            }}>
               <Avatar
                 src={user.iconUrl ?? undefined}
-                sx={{ width: 80, height: 80, bgcolor: 'primary.main', fontSize: 32 }}
+                sx={{
+                  width: { xs: 72, md: 96 },
+                  height: { xs: 72, md: 96 },
+                  bgcolor: 'primary.main',
+                  border: '4px solid white',
+                  mt: { xs: -4, md: -5 },
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                }}
               >
-                {!user.iconUrl && <Person sx={{ fontSize: 40 }} />}
+                {!user.iconUrl && <Person sx={{ fontSize: { xs: 36, md: 48 } }} />}
               </Avatar>
 
-              <Box sx={{ flex: 1, minWidth: 200 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                    {user.name}
-                  </Typography>
-                  {isOwnProfile ? (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      href="/user/settings"
-                      sx={{ borderRadius: 2, fontWeight: 600 }}
-                    >
-                      編集
-                    </Button>
-                  ) : currentUserId && (
-                    <FollowButton targetUserId={id} initialStatus={followStatus} />
-                  )}
-                </Box>
-
-                {user.bio && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {user.bio}
-                  </Typography>
+              <Box sx={{ pb: 0.5 }}>
+                {isOwnProfile ? (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    href="/user/settings"
+                    sx={{ borderRadius: 2, fontWeight: 600, px: 3 }}
+                  >
+                    プロフィールを編集
+                  </Button>
+                ) : currentUserId && (
+                  <FollowButton targetUserId={id} initialStatus={followStatus} />
                 )}
+              </Box>
+            </Box>
 
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                  {user.fishingYears != null && (
-                    <Chip label={`釣り歴 ${user.fishingYears}年`} size="small" variant="outlined" />
-                  )}
-                  {user.mainFishing && (
-                    <Chip label={user.mainFishing} size="small" variant="outlined" color="primary" />
-                  )}
-                </Box>
+            {/* Name & bio */}
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+              {user.name}
+            </Typography>
+            {user.bio && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 480 }}>
+                {user.bio}
+              </Typography>
+            )}
 
-                <Box sx={{ display: 'flex', gap: 3 }}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>{user._count.posts}</Typography>
-                    <Typography variant="caption" color="text.secondary">投稿</Typography>
-                  </Box>
-                  <Box
-                    component={Link}
-                    href={`/user/${id}/follows?tab=followers`}
-                    sx={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.7 } }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>{user._count.followers}</Typography>
-                    <Typography variant="caption" color="text.secondary">フォロワー</Typography>
-                  </Box>
-                  <Box
-                    component={Link}
-                    href={`/user/${id}/follows?tab=following`}
-                    sx={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.7 } }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 700 }}>{user._count.following}</Typography>
-                    <Typography variant="caption" color="text.secondary">フォロー中</Typography>
-                  </Box>
-                </Box>
+            {/* Chips */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+              {user.fishingYears != null && (
+                <Chip
+                  icon={<Waves sx={{ fontSize: 14 }} />}
+                  label={`釣り歴 ${user.fishingYears}年`}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+              {user.mainFishing && (
+                <Chip
+                  icon={<LocationOn sx={{ fontSize: 14 }} />}
+                  label={user.mainFishing}
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                />
+              )}
+            </Box>
+
+            {/* Stats */}
+            <Divider sx={{ mb: 2.5 }} />
+            <Box sx={{ display: 'flex', gap: { xs: 3, md: 5 } }}>
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                  {user._count.posts}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">投稿</Typography>
+              </Box>
+              <Box
+                component={Link}
+                href={`/user/${id}/follows?tab=followers`}
+                sx={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.7 } }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                  {user._count.followers}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">フォロワー</Typography>
+              </Box>
+              <Box
+                component={Link}
+                href={`/user/${id}/follows?tab=following`}
+                sx={{ textAlign: 'center', textDecoration: 'none', color: 'inherit', '&:hover': { opacity: 0.7 } }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                  {user._count.following}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">フォロー中</Typography>
               </Box>
             </Box>
           </CardContent>
         </Card>
 
-        {/* Fishing Map */}
-        {userFishingAreas.length > 0 && (
-          <Card sx={{ borderRadius: 4, mb: 4, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-            <CardContent sx={{ p: 3, pb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-                🗺️ 釣りポイント ({userFishingAreas.length}箇所)
-              </Typography>
-            </CardContent>
-            <UserFishingMap areas={userFishingAreas} height="300px" />
-          </Card>
-        )}
+        {/* Main content: map (left) + posts (right) on desktop */}
+        <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', flexDirection: { xs: 'column', md: 'row' } }}>
 
-        {/* Posts */}
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          投稿一覧
-        </Typography>
+          {/* Left: Map (sticky on desktop) */}
+          {userFishingAreas.length > 0 && (
+            <Box sx={{ width: { xs: '100%', md: 340, lg: 380 }, flexShrink: 0, position: { md: 'sticky' }, top: { md: 80 } }}>
+              <Card sx={{ borderRadius: 4, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+                <CardContent sx={{ p: 2.5, pb: 1.5 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    釣りポイント ({userFishingAreas.length}箇所)
+                  </Typography>
+                </CardContent>
+                <UserFishingMap areas={userFishingAreas} height="320px" />
+              </Card>
+            </Box>
+          )}
 
-        {posts.length === 0 ? (
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ textAlign: 'center', py: 6 }}>
-              <Typography variant="h6" color="text.secondary">
-                🎣 まだ投稿がありません
-              </Typography>
-            </CardContent>
-          </Card>
-        ) : (
-          <Grid container spacing={2}>
-            {posts.map((post) => (
-              <Grid item xs={12} key={post.id}>
-                <Card
-                  component={Link}
-                  href={`/post/${post.id}`}
-                  sx={{
-                    borderRadius: 3,
-                    background: 'rgba(255,255,255,0.9)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    transition: 'all 0.2s',
-                    textDecoration: 'none',
-                    display: 'block',
-                    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="body1" sx={{ mb: 1.5, lineHeight: 1.6 }}>
-                      {post.content}
-                    </Typography>
+          {/* Right: Posts */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+              投稿一覧
+            </Typography>
 
-                    {post.imageUrls.length > 0 && (
-                      <Box sx={{
-                        mb: 1.5,
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        display: 'grid',
-                        gridTemplateColumns: post.imageUrls.length === 1 ? '1fr' : '1fr 1fr',
-                        gap: '2px',
-                        maxWidth: { xs: '100%', md: 360 },
-                      }}>
-                        {post.imageUrls.slice(0, 4).map((url, i) => (
-                          <Box
-                            key={i}
-                            sx={{
-                              position: 'relative',
-                              aspectRatio: '1 / 1',
-                              gridRow: post.imageUrls.length === 3 && i === 0 ? 'span 2' : undefined,
-                            }}
-                          >
-                            <NextImage
-                              src={url}
-                              alt={`投稿画像 ${i + 1}`}
-                              fill
-                              sizes="(max-width: 600px) 90vw, 360px"
-                              style={{ objectFit: 'cover' }}
-                            />
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
+            {posts.length === 0 ? (
+              <Card sx={{ borderRadius: 3 }}>
+                <CardContent sx={{ textAlign: 'center', py: 6 }}>
+                  <Typography variant="h6" color="text.secondary">
+                    まだ投稿がありません
+                  </Typography>
+                </CardContent>
+              </Card>
+            ) : (
+              <Grid container spacing={2}>
+                {posts.map((post) => (
+                  <Grid item xs={12} lg={6} key={post.id}>
+                    <Card
+                      component={Link}
+                      href={`/post/${post.id}`}
+                      sx={{
+                        borderRadius: 3,
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        transition: 'all 0.2s',
+                        textDecoration: 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                        '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' },
+                      }}
+                    >
+                      {/* Post image */}
+                      {post.imageUrls.length > 0 && (
+                        <Box sx={{
+                          position: 'relative',
+                          aspectRatio: '16 / 9',
+                          overflow: 'hidden',
+                          borderRadius: '12px 12px 0 0',
+                          bgcolor: '#f0f0f0',
+                        }}>
+                          <NextImage
+                            src={post.imageUrls[0]}
+                            alt="投稿画像"
+                            fill
+                            sizes="(max-width: 600px) 100vw, (max-width: 1200px) 50vw, 400px"
+                            style={{ objectFit: 'cover' }}
+                          />
+                          {post.imageUrls.length > 1 && (
+                            <Box sx={{
+                              position: 'absolute', bottom: 8, right: 8,
+                              bgcolor: 'rgba(0,0,0,0.55)', color: 'white',
+                              borderRadius: 1, px: 1, py: 0.25,
+                              fontSize: 12, fontWeight: 600,
+                            }}>
+                              +{post.imageUrls.length - 1}
+                            </Box>
+                          )}
+                        </Box>
+                      )}
 
-                    {post.fishingArea && (
-                      <Chip
-                        label={`📍 ${post.fishingArea.name || '釣りポイント'}`}
-                        variant="outlined"
-                        color="primary"
-                        size="small"
-                        sx={{ mb: 1.5 }}
-                      />
-                    )}
-
-                    <Divider sx={{ mb: 1.5 }} />
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <FavoriteBorder fontSize="small" sx={{ color: 'text.secondary' }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {post.likes.length}
+                      <CardContent sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            mb: 1.5, lineHeight: 1.6, flex: 1,
+                            display: '-webkit-box', WebkitLineClamp: 3,
+                            WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                          }}
+                        >
+                          {post.content}
                         </Typography>
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(post.createdAt).toLocaleDateString('ja-JP', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
+
+                        {post.fishingArea && (
+                          <Chip
+                            label={`📍 ${post.fishingArea.name || '釣りポイント'}`}
+                            variant="outlined"
+                            color="primary"
+                            size="small"
+                            sx={{ mb: 1.5, alignSelf: 'flex-start' }}
+                          />
+                        )}
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <FavoriteBorder fontSize="small" sx={{ color: 'text.secondary', fontSize: 16 }} />
+                            <Typography variant="caption" color="text.secondary">
+                              {post.likes.length}
+                            </Typography>
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(post.createdAt).toLocaleDateString('ja-JP', {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
               </Grid>
-            ))}
-          </Grid>
-        )}
+            )}
+          </Box>
+        </Box>
       </Container>
     </Box>
   )

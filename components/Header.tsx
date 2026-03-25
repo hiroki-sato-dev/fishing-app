@@ -44,17 +44,17 @@ export const Header = () => {
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         {/* Logo */}
         <Typography
-          variant="h5"
           component={Link}
           href="/home"
           sx={{
-            fontWeight: '700',
+            fontWeight: 700,
+            fontSize: { xs: '1.1rem', sm: '1.25rem' },
             background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
             textDecoration: 'none',
-            letterSpacing: '-0.02em'
+            letterSpacing: '-0.02em',
           }}
         >
           🎣 FishingSNS

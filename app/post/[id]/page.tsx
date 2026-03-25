@@ -31,26 +31,30 @@ export default async function PostDetailPage({ params }: Props) {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc, #eff6ff)', pt: 10 }}>
-      <Container maxWidth="sm" sx={{ py: 4 }}>
+    <Box sx={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc, #eff6ff)', pt: { xs: 8, md: 10 } }}>
+      <Container maxWidth="sm" sx={{ py: { xs: 2, sm: 4 } }}>
+
         {/* Back button */}
-        <Box sx={{ mb: 2 }}>
-          <IconButton component={Link} href="/home" sx={{ color: 'text.secondary' }}>
+        <Box sx={{ mb: { xs: 1, sm: 2 } }}>
+          <IconButton component={Link} href="/home" sx={{ color: 'text.secondary', p: { xs: 0.5, sm: 1 } }}>
             <ArrowBack />
           </IconButton>
         </Box>
 
         {/* Post Card */}
-        <Card sx={{ borderRadius: 4, mb: 3, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
-          <CardContent sx={{ p: 3 }}>
+        <Card sx={{ borderRadius: { xs: 3, sm: 4 }, mb: { xs: 2, sm: 3 }, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+
             {/* Author */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1.5, sm: 2 } }}>
               <Avatar
                 component={Link}
                 href={`/user/${post.user.id}`}
                 src={post.user.iconUrl ?? undefined}
                 sx={{
-                  width: 44, height: 44, mr: 1.5,
+                  width: { xs: 38, sm: 44 },
+                  height: { xs: 38, sm: 44 },
+                  mr: 1.5,
                   background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)',
                   cursor: 'pointer',
                 }}
@@ -61,12 +65,17 @@ export default async function PostDetailPage({ params }: Props) {
                 <Typography
                   component={Link}
                   href={`/user/${post.user.id}`}
-                  variant="subtitle1"
-                  sx={{ fontWeight: 600, textDecoration: 'none', color: 'text.primary', '&:hover': { color: 'primary.main' } }}
+                  sx={{
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    color: 'text.primary',
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    '&:hover': { color: 'primary.main' },
+                  }}
                 >
                   {post.user.name}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" display="block">
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                   {new Date(post.createdAt).toLocaleDateString('ja-JP', {
                     year: 'numeric', month: 'short', day: 'numeric',
                     hour: '2-digit', minute: '2-digit',
@@ -76,20 +85,20 @@ export default async function PostDetailPage({ params }: Props) {
             </Box>
 
             {/* Content */}
-            <Typography variant="body1" sx={{ lineHeight: 1.8, mb: 2 }}>
+            <Typography sx={{ lineHeight: 1.8, mb: { xs: 1.5, sm: 2 }, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
               {post.content}
             </Typography>
 
             {/* Images */}
             {post.imageUrls.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: { xs: 1.5, sm: 2 } }}>
                 {post.imageUrls.map((url, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={i}
                     src={url}
                     alt={`投稿画像${i + 1}`}
-                    style={{ width: '100%', maxWidth: 400, borderRadius: 8, objectFit: 'cover' }}
+                    style={{ width: '100%', borderRadius: 8, objectFit: 'cover' }}
                   />
                 ))}
               </Box>
@@ -97,24 +106,25 @@ export default async function PostDetailPage({ params }: Props) {
 
             {/* Fishing Area */}
             {post.fishingArea && (
-              <Box sx={{ mb: 2 }}>
+              <Box sx={{ mb: { xs: 1.5, sm: 2 } }}>
                 <Chip
                   label={`📍 ${post.fishingArea.name || '釣りポイント'}`}
                   variant="outlined"
                   color="primary"
                   size="small"
-                  sx={{ mb: 1.5 }}
+                  sx={{ mb: 1.5, fontSize: { xs: '0.75rem', sm: '0.8rem' } }}
                 />
                 <PostDetailMap
                   centerLat={post.fishingArea.centerLat}
                   centerLng={post.fishingArea.centerLng}
                   radius={post.fishingArea.radius}
                   areaName={post.fishingArea.name}
+                  height="240px"
                 />
               </Box>
             )}
 
-            <Divider sx={{ mb: 2 }} />
+            <Divider sx={{ mb: { xs: 1.5, sm: 2 } }} />
 
             {/* Likes & Comments */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -131,7 +141,7 @@ export default async function PostDetailPage({ params }: Props) {
                 return (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <ChatBubbleOutline sx={{ fontSize: 18, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mr: 0.5 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mr: 0.5, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                       {post.comments.length}
                     </Typography>
                     <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 20, height: 20, fontSize: 10, border: '1.5px solid white' } }}>
@@ -148,10 +158,10 @@ export default async function PostDetailPage({ params }: Props) {
               })()}
             </Box>
 
-            {/* いいねしたユーザー一覧（投稿者本人のみ表示） */}
+            {/* いいねしたユーザー（投稿者本人のみ） */}
             {currentUserId === post.user.id && post.likes.length > 0 && (
               <Box sx={{ mt: 1.5 }}>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                   いいねしたユーザー
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5 }}>
@@ -160,8 +170,7 @@ export default async function PostDetailPage({ params }: Props) {
                       <Typography
                         component={Link}
                         href={`/user/${like.user.id}`}
-                        variant="body2"
-                        sx={{ fontWeight: 600, textDecoration: 'none', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
+                        sx={{ fontWeight: 600, textDecoration: 'none', color: 'primary.main', fontSize: { xs: '0.8rem', sm: '0.875rem' }, '&:hover': { textDecoration: 'underline' } }}
                       >
                         {like.user.name}
                       </Typography>
@@ -187,8 +196,8 @@ export default async function PostDetailPage({ params }: Props) {
         </Card>
 
         {/* Comments */}
-        <Card sx={{ borderRadius: 4, boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}>
-          <CardContent sx={{ p: 3 }}>
+        <Card sx={{ borderRadius: { xs: 3, sm: 4 }, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <CommentSection
               postId={post.id}
               comments={post.comments}

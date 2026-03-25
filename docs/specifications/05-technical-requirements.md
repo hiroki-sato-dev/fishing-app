@@ -7,7 +7,7 @@
 - **言語**: TypeScript
 - **UIライブラリ**: React + Material-UI
 - **スタイリング**: Tailwind CSS
-- **地図**: Google Maps JavaScript API
+- **地図**: Google Maps JavaScript API（`@vis.gl/react-google-maps` React ラッパー使用）
 - **バリデーション**: Zod
 
 ### 5.1.2 バックエンド
@@ -77,6 +77,7 @@
 
 ### 5.5.1 外部API制約
 - **Google Maps API**: 使用量制限・課金体系に注意
+- **Google Maps Map ID**: `AdvancedMarkerElement` の利用に必須。`NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` 環境変数で設定（未設定時は開発用 `DEMO_MAP_ID` にフォールバック）
 - **位置情報取得**: ユーザー許可必須、取得失敗時の代替手段
 
 ### 5.5.2 データ制限

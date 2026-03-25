@@ -7,6 +7,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 import { Amplify } from 'aws-amplify'
 import { Authenticator } from '@aws-amplify/ui-react'
 import '@aws-amplify/ui-react/styles.css'
+import { APIProvider } from '@vis.gl/react-google-maps'
 
 // ssr: true でトークンをCookieに保存（Server Actionでの認証チェックに必要）
 Amplify.configure(
@@ -54,7 +55,9 @@ export function Providers({ children }: ProvidersProps) {
       <AppRouterCacheProvider>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {children}
+          <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+            {children}
+          </APIProvider>
         </ThemeProvider>
       </AppRouterCacheProvider>
     </Authenticator.Provider>
