@@ -88,7 +88,7 @@ export default async function LikesPage({ params }: Props) {
                     )}
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {new Date(like.createdAt).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
+                    {new Date(like.createdAt).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'short', day: 'numeric' })}
                   </Typography>
                 </Box>
                 {index < likes.length - 1 && <Divider />}

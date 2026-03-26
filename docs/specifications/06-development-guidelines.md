@@ -193,7 +193,21 @@ const PostList = ({ posts }: { posts: Post[] }) => {
 }
 ```
 
-### 6.2.4 ファイル命名規約
+### 6.2.4 日時・タイムゾーン規約
+
+- **全ての日時表示はJST（UTC+9）で行う**
+- DBにはUTCで保存し、表示時にJSTへ変換する
+- `toLocaleString` / `toLocaleDateString` を使う場合は必ず `timeZone: 'Asia/Tokyo'` を指定する
+
+```typescript
+// ✅ 推奨
+const formatted = date.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+
+// ❌ 非推奨（環境依存でタイムゾーンが変わる）
+const formatted = date.toLocaleString('ja-JP')
+```
+
+### 6.2.5 ファイル命名規約
 - **コンポーネント**: PascalCase（`PostCard.tsx`）
 - **Server Actions**: camelCase（`createPost.ts`）
 - **ユーティリティ**: camelCase（`formatDate.ts`）

@@ -77,6 +77,7 @@ export default async function PostDetailPage({ params }: Props) {
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                   {new Date(post.createdAt).toLocaleDateString('ja-JP', {
+                    timeZone: 'Asia/Tokyo',
                     year: 'numeric', month: 'short', day: 'numeric',
                     hour: '2-digit', minute: '2-digit',
                   })}

@@ -213,6 +213,7 @@ export default async function HomePage({ searchParams }: Props) {
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                               {new Date(post.createdAt).toLocaleDateString('ja-JP', {
+                                timeZone: 'Asia/Tokyo',
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',

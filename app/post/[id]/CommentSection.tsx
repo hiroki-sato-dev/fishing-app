@@ -69,6 +69,7 @@ export function CommentSection({ postId, comments, currentUserId, isLoggedIn }: 
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {new Date(comment.createdAt).toLocaleDateString('ja-JP', {
+                          timeZone: 'Asia/Tokyo',
                           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                         })}
                       </Typography>

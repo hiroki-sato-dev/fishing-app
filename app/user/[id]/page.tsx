@@ -258,6 +258,7 @@ export default async function UserProfilePage({ params }: Props) {
                           </Box>
                           <Typography variant="caption" color="text.secondary">
                             {new Date(post.createdAt).toLocaleDateString('ja-JP', {
+                              timeZone: 'Asia/Tokyo',
                               month: 'short',
                               day: 'numeric',
                             })}
