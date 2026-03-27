@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
-import { Box } from '@mui/material'
+import { Box, Dialog, IconButton, Tooltip, Typography } from '@mui/material'
+import { Close, Fullscreen } from '@mui/icons-material'
 
 type AreaPin = {
   id: string
@@ -84,65 +85,136 @@ const MapSetup = ({ areas }: { areas: AreaPin[] }) => {
 
 export function UserFishingMap({ areas, height = '300px' }: Props) {
   const [selectedArea, setSelectedArea] = useState<AreaPin | null>(null)
+  const [modalSelectedArea, setModalSelectedArea] = useState<AreaPin | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   if (areas.length === 0) return null
 
   const avgLat = areas.reduce((sum, a) => sum + a.centerLat, 0) / areas.length
   const avgLng = areas.reduce((sum, a) => sum + a.centerLng, 0) / areas.length
 
+  const mapProps = {
+    defaultCenter: { lat: avgLat, lng: avgLng },
+    defaultZoom: 12,
+    mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID',
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    zoomControl: true,
+    gestureHandling: 'greedy' as const,
+  }
+
   return (
-    <Box sx={{ height, borderRadius: 2, border: '1px solid #ddd', overflow: 'hidden' }}>
-      <Map
-        style={{ width: '100%', height: '100%' }}
-        defaultCenter={{ lat: avgLat, lng: avgLng }}
-        defaultZoom={12}
-        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID'}
-        mapTypeControl={false}
-        streetViewControl={false}
-        fullscreenControl={false}
-        zoomControl
-      >
-        <MapSetup areas={areas} />
+    <>
+      <div style={{ position: 'relative' }}>
+      <Box sx={{ height, borderRadius: 2, border: '1px solid #ddd', overflow: 'hidden' }}>
+        <Map style={{ width: '100%', height: '100%' }} {...mapProps}>
+          <MapSetup areas={areas} />
+          {areas.map(area => (
+            <AreaCircle key={area.id} area={area} onClick={() => setSelectedArea(area)} />
+          ))}
+          {areas.map(area => (
+            <AdvancedMarker
+              key={area.id}
+              position={{ lat: area.centerLat, lng: area.centerLng }}
+              title={area.name || '釣りポイント'}
+              onClick={() => setSelectedArea(area)}
+            >
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%',
+                backgroundColor: '#EF4444', border: '2px solid white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontSize: '12px', fontWeight: 'bold',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              }}>
+                {area.postCount}
+              </div>
+            </AdvancedMarker>
+          ))}
+          {selectedArea && (
+            <InfoWindow
+              position={{ lat: selectedArea.centerLat, lng: selectedArea.centerLng }}
+              onCloseClick={() => setSelectedArea(null)}
+            >
+              <div style={{ padding: '8px', minWidth: '160px' }}>
+                <p style={{ margin: 0, fontWeight: 600, color: '#1D4ED8', fontSize: '14px' }}>
+                  {selectedArea.name || '釣りポイント'}
+                </p>
+                <p style={{ margin: '4px 0 0', color: '#666', fontSize: '12px' }}>
+                  投稿数: {selectedArea.postCount}件
+                </p>
+              </div>
+            </InfoWindow>
+          )}
+        </Map>
+      </Box>
+      <Tooltip title="地図を拡大">
+        <IconButton
+          size="small"
+          onClick={() => setIsModalOpen(true)}
+          sx={{
+            position: 'absolute', top: 8, right: 8, zIndex: 10,
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            '&:hover': { backgroundColor: 'white' },
+          }}
+        >
+          <Fullscreen fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      </div>
 
-        {areas.map(area => (
-          <AreaCircle key={area.id} area={area} onClick={() => setSelectedArea(area)} />
-        ))}
-
-        {areas.map(area => (
-          <AdvancedMarker
-            key={area.id}
-            position={{ lat: area.centerLat, lng: area.centerLng }}
-            title={area.name || '釣りポイント'}
-            onClick={() => setSelectedArea(area)}
-          >
-            <div style={{
-              width: 24, height: 24, borderRadius: '50%',
-              backgroundColor: '#EF4444', border: '2px solid white',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontSize: '12px', fontWeight: 'bold',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-            }}>
-              {area.postCount}
-            </div>
-          </AdvancedMarker>
-        ))}
-
-        {selectedArea && (
-          <InfoWindow
-            position={{ lat: selectedArea.centerLat, lng: selectedArea.centerLng }}
-            onCloseClick={() => setSelectedArea(null)}
-          >
-            <div style={{ padding: '8px', minWidth: '160px' }}>
-              <p style={{ margin: 0, fontWeight: 600, color: '#1D4ED8', fontSize: '14px' }}>
-                {selectedArea.name || '釣りポイント'}
-              </p>
-              <p style={{ margin: '4px 0 0', color: '#666', fontSize: '12px' }}>
-                投稿数: {selectedArea.postCount}件
-              </p>
-            </div>
-          </InfoWindow>
-        )}
-      </Map>
-    </Box>
+      <Dialog fullScreen open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5, borderBottom: '1px solid #eee', flexShrink: 0 }}>
+            <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>釣りエリアマップ</Typography>
+            <IconButton onClick={() => setIsModalOpen(false)}>
+              <Close />
+            </IconButton>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Map style={{ width: '100%', height: '100%' }} {...mapProps}>
+              <MapSetup areas={areas} />
+              {areas.map(area => (
+                <AreaCircle key={area.id} area={area} onClick={() => setModalSelectedArea(area)} />
+              ))}
+              {areas.map(area => (
+                <AdvancedMarker
+                  key={area.id}
+                  position={{ lat: area.centerLat, lng: area.centerLng }}
+                  title={area.name || '釣りポイント'}
+                  onClick={() => setModalSelectedArea(area)}
+                >
+                  <div style={{
+                    width: 24, height: 24, borderRadius: '50%',
+                    backgroundColor: '#EF4444', border: '2px solid white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', fontSize: '12px', fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  }}>
+                    {area.postCount}
+                  </div>
+                </AdvancedMarker>
+              ))}
+              {modalSelectedArea && (
+                <InfoWindow
+                  position={{ lat: modalSelectedArea.centerLat, lng: modalSelectedArea.centerLng }}
+                  onCloseClick={() => setModalSelectedArea(null)}
+                >
+                  <div style={{ padding: '8px', minWidth: '160px' }}>
+                    <p style={{ margin: 0, fontWeight: 600, color: '#1D4ED8', fontSize: '14px' }}>
+                      {modalSelectedArea.name || '釣りポイント'}
+                    </p>
+                    <p style={{ margin: '4px 0 0', color: '#666', fontSize: '12px' }}>
+                      投稿数: {modalSelectedArea.postCount}件
+                    </p>
+                  </div>
+                </InfoWindow>
+              )}
+            </Map>
+          </Box>
+        </Box>
+      </Dialog>
+    </>
   )
 }

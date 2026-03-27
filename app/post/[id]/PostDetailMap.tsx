@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps'
-import { Box } from '@mui/material'
+import { Box, Dialog, IconButton, Tooltip, Typography } from '@mui/material'
+import { Close, Fullscreen } from '@mui/icons-material'
 
 type Props = {
   centerLat: number
@@ -44,30 +45,74 @@ const FishingCircle = ({ centerLat, centerLng, radius }: InnerProps) => {
 }
 
 export function PostDetailMap({ centerLat, centerLng, radius, areaName, height = '280px' }: Props) {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const mapProps = {
+    defaultCenter: { lat: centerLat, lng: centerLng },
+    defaultZoom: 15,
+    mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID',
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    zoomControl: true,
+    gestureHandling: 'greedy' as const,
+  }
+
   return (
-    <Box sx={{ height, borderRadius: 2, border: '1px solid #ddd', overflow: 'hidden' }}>
-      <Map
-        style={{ width: '100%', height: '100%' }}
-        defaultCenter={{ lat: centerLat, lng: centerLng }}
-        defaultZoom={15}
-        mapId={process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID'}
-        mapTypeControl={false}
-        streetViewControl={false}
-        fullscreenControl={false}
-        zoomControl
-      >
-        <FishingCircle centerLat={centerLat} centerLng={centerLng} radius={radius} />
-        <AdvancedMarker
-          position={{ lat: centerLat, lng: centerLng }}
-          title={areaName || '釣りポイント'}
+    <>
+      <div style={{ position: 'relative' }}>
+      <Box sx={{ height, borderRadius: 2, border: '1px solid #ddd', overflow: 'hidden' }}>
+        <Map style={{ width: '100%', height: '100%' }} {...mapProps}>
+          <FishingCircle centerLat={centerLat} centerLng={centerLng} radius={radius} />
+          <AdvancedMarker position={{ lat: centerLat, lng: centerLng }} title={areaName || '釣りポイント'}>
+            <div style={{
+              width: 20, height: 20, borderRadius: '50%',
+              backgroundColor: '#EF4444', border: '2px solid white',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            }} />
+          </AdvancedMarker>
+        </Map>
+      </Box>
+      <Tooltip title="地図を拡大">
+        <IconButton
+          size="small"
+          onClick={() => setIsModalOpen(true)}
+          sx={{
+            position: 'absolute', top: 8, right: 8, zIndex: 10,
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            '&:hover': { backgroundColor: 'white' },
+          }}
         >
-          <div style={{
-            width: 20, height: 20, borderRadius: '50%',
-            backgroundColor: '#EF4444', border: '2px solid white',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-          }} />
-        </AdvancedMarker>
-      </Map>
-    </Box>
+          <Fullscreen fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      </div>
+
+      <Dialog fullScreen open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 1.5, borderBottom: '1px solid #eee', flexShrink: 0 }}>
+            <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>
+              {areaName || '釣りポイント'}
+            </Typography>
+            <IconButton onClick={() => setIsModalOpen(false)}>
+              <Close />
+            </IconButton>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Map style={{ width: '100%', height: '100%' }} {...mapProps}>
+              <FishingCircle centerLat={centerLat} centerLng={centerLng} radius={radius} />
+              <AdvancedMarker position={{ lat: centerLat, lng: centerLng }} title={areaName || '釣りポイント'}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  backgroundColor: '#EF4444', border: '2px solid white',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                }} />
+              </AdvancedMarker>
+            </Map>
+          </Box>
+        </Box>
+      </Dialog>
+    </>
   )
 }
