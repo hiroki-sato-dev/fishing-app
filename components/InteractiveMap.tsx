@@ -251,6 +251,7 @@ export const InteractiveMap = forwardRef<{ clearSelection?: () => void }, Intera
           mapTypeControl={false}
           streetViewControl={false}
           fullscreenControl={false}
+          gestureHandling="greedy"
           onClick={handleMapClick}
         >
           <MapSetup fishingAreas={fishingAreas} currentLocation={currentLocation ?? null} />

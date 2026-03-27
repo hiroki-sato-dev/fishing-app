@@ -7,6 +7,7 @@
 - **言語**: TypeScript
 - **UIライブラリ**: React + Material-UI
 - **スタイリング**: Tailwind CSS
+- **フォント**: Inter + Noto Sans JP（Google Fonts）— 欧文は Inter、日本語は Noto Sans JP
 - **地図**: Google Maps JavaScript API（`@vis.gl/react-google-maps` React ラッパー使用）
 - **バリデーション**: Zod
 

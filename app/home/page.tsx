@@ -1,11 +1,11 @@
 import { getPosts, getFishingAreas, checkDbUserExists, getFollowingIds } from './actions/getPosts'
 import { getCurrentDbUserId } from '@/app/post/[id]/actions/getPost'
 import { extractPosts, extractFishingAreas } from './helpers/posts'
-import { SimpleMap } from '@/components/SimpleMap'
+import { MapCard } from './components/MapCard'
 import { PostFab } from './components/PostFab'
 import { PostButton } from './components/PostButton'
-import { Container, Grid, Typography, Box, Button, Card, CardContent, Avatar, AvatarGroup, Badge, Chip, IconButton, Divider, Tooltip, Tabs, Tab } from '@mui/material'
-import { ChatBubbleOutline, MoreVert, TrendingUp, Person } from '@mui/icons-material'
+import { Container, Grid, Typography, Box, Card, CardContent, Avatar, AvatarGroup, Badge, Chip, IconButton, Divider, Tooltip, Tabs, Tab } from '@mui/material'
+import { ChatBubbleOutline, MoreVert, Person } from '@mui/icons-material'
 import { LikeButton } from '@/components/LikeButton'
 import Link from 'next/link'
 import NextImage from 'next/image'
@@ -81,41 +81,12 @@ export default async function HomePage({ searchParams }: Props) {
         <Grid container spacing={{ xs: 2, md: 4 }}>
           {/* 地図エリア - デスクトップのみ表示 */}
           <Grid item xs={12} lg={8} sx={{ display: { xs: 'none', lg: 'block' } }}>
-            <Card sx={{
-              borderRadius: 4,
-              overflow: 'hidden',
-              boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)',
-              background: 'rgba(255,255,255,0.9)',
-              backdropFilter: 'blur(10px)',
-            }}>
-              <Box sx={{ p: 3, pb: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    🗺️ 釣りエリアマップ
-                    <Chip label={`${fishingAreas.length}エリア`} color="primary" size="small" sx={{ ml: 1, fontWeight: 600 }} />
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<TrendingUp />}
-                    sx={{ borderRadius: 2, borderColor: 'primary.main', color: 'primary.main', '&:hover': { bgcolor: 'rgba(14,165,233,0.1)' } }}
-                  >
-                    トレンド
-                  </Button>
-                </Box>
-              </Box>
-              <SimpleMap fishingAreas={fishingAreas} height="500px" />
-            </Card>
+            <MapCard fishingAreas={fishingAreas} />
           </Grid>
 
           {/* モバイル用コンパクト地図 */}
           <Grid item xs={12} sx={{ display: { xs: 'block', lg: 'none' } }}>
-            <Card sx={{ borderRadius: 3, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-              <Box sx={{ px: 2, pt: 1.5, pb: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>🗺️ 釣りエリアマップ</Typography>
-                <Chip label={`${fishingAreas.length}`} color="primary" size="small" sx={{ fontWeight: 600, height: 20, fontSize: '0.7rem' }} />
-              </Box>
-              <SimpleMap fishingAreas={fishingAreas} height="180px" />
-            </Card>
+            <MapCard fishingAreas={fishingAreas} height="180px" />
           </Grid>
 
           {/* 投稿一覧 */}
