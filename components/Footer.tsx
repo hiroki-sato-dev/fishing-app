@@ -1,7 +1,6 @@
 'use client'
 
-import { Box, Container, Typography, IconButton, Divider } from '@mui/material'
-import { Twitter, Instagram, GitHub } from '@mui/icons-material'
+import { Box, Container, Typography, Divider } from '@mui/material'
 
 export const Footer = () => (
   <Box 
@@ -29,11 +28,12 @@ export const Footer = () => (
           🎣 FishingSNS
         </Typography>
         
+        {/* TODO: SNSリンク設定後に有効化
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton 
-            sx={{ 
+          <IconButton
+            sx={{
               color: 'text.secondary',
-              '&:hover': { 
+              '&:hover': {
                 color: 'primary.main',
                 bgcolor: 'rgba(14, 165, 233, 0.1)'
               }
@@ -41,10 +41,10 @@ export const Footer = () => (
           >
             <Twitter />
           </IconButton>
-          <IconButton 
-            sx={{ 
+          <IconButton
+            sx={{
               color: 'text.secondary',
-              '&:hover': { 
+              '&:hover': {
                 color: 'primary.main',
                 bgcolor: 'rgba(14, 165, 233, 0.1)'
               }
@@ -52,10 +52,10 @@ export const Footer = () => (
           >
             <Instagram />
           </IconButton>
-          <IconButton 
-            sx={{ 
+          <IconButton
+            sx={{
               color: 'text.secondary',
-              '&:hover': { 
+              '&:hover': {
                 color: 'primary.main',
                 bgcolor: 'rgba(14, 165, 233, 0.1)'
               }
@@ -64,6 +64,7 @@ export const Footer = () => (
             <GitHub />
           </IconButton>
         </Box>
+        */}
       </Box>
       
       <Divider sx={{ mb: 3, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
@@ -75,10 +76,11 @@ export const Footer = () => (
         alignItems: { xs: 'center', md: 'flex-start' },
         gap: 3
       }}>
+        {/* TODO: 各ページ作成後に有効化
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: 'text.secondary',
               '&:hover': { color: 'primary.main' },
               cursor: 'pointer'
@@ -86,9 +88,9 @@ export const Footer = () => (
           >
             利用規約
           </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: 'text.secondary',
               '&:hover': { color: 'primary.main' },
               cursor: 'pointer'
@@ -96,9 +98,9 @@ export const Footer = () => (
           >
             プライバシーポリシー
           </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: 'text.secondary',
               '&:hover': { color: 'primary.main' },
               cursor: 'pointer'
@@ -106,9 +108,9 @@ export const Footer = () => (
           >
             お問い合わせ
           </Typography>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: 'text.secondary',
               '&:hover': { color: 'primary.main' },
               cursor: 'pointer'
@@ -117,14 +119,17 @@ export const Footer = () => (
             ヘルプ
           </Typography>
         </Box>
+        */}
         
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
+        {/* TODO: リリース時に有効化
+        <Typography
+          variant="body2"
+          color="text.secondary"
           sx={{ textAlign: { xs: 'center', md: 'right' } }}
         >
           © 2024 FishingSNS. All rights reserved.
         </Typography>
+        */}
       </Box>
     </Container>
   </Box>

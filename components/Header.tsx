@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { AppBar, Toolbar, Typography, Box, Button, Avatar, IconButton, Badge, Menu, MenuItem, Tooltip } from '@mui/material'
-import { Add as AddIcon, Notifications, Home, Explore, Logout, Person, AccountCircle } from '@mui/icons-material'
+import { AppBar, Toolbar, Typography, Box, Button, Avatar, IconButton, Menu, MenuItem, Tooltip } from '@mui/material'
+import { Add as AddIcon, Home, Logout, Person, AccountCircle /* Notifications, Badge, Explore (未実装機能) */ } from '@mui/icons-material'
 import { useAuthenticator } from '@aws-amplify/ui-react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -76,6 +76,7 @@ export const Header = () => {
           >
             ホーム
           </Button>
+          {/* TODO: 探すページ実装後に有効化 (SEARCH-002)
           <Button
             component={Link}
             href="/explore"
@@ -90,6 +91,7 @@ export const Header = () => {
           >
             探す
           </Button>
+          */}
 
           <Tooltip title={!isLoggedIn ? '投稿するにはログインが必要です' : ''} arrow>
             <span>
@@ -118,11 +120,13 @@ export const Header = () => {
             </span>
           </Tooltip>
 
+          {/* TODO: 通知機能実装後に有効化
           <IconButton sx={{ ml: 1, color: 'text.secondary', '&:hover': { bgcolor: 'rgba(14, 165, 233, 0.1)' } }}>
             <Badge badgeContent={0} color="error">
               <Notifications />
             </Badge>
           </IconButton>
+          */}
 
           {isLoggedIn ? (
             <>
